@@ -1,0 +1,967 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Tank Loading Data & Anchor Bolt Report</title>
+    <script src="libs/pdf.min.js"></script>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
+        .control-panel { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center; }
+        .btn-print { background-color: #0056b3; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        .btn-print:hover { background-color: #004494; }
+        
+        .report-page { 
+            background: #fff; width: 297mm; min-height: 210mm; margin: 0 auto; 
+            padding: 12mm; box-shadow: 0 0 10px rgba(0,0,0,0.1); box-sizing: border-box; 
+        }
+        .page-break { page-break-before: always; margin-top: 20px; }
+        
+        .report-header { text-align: center; border-bottom: 3px solid #333; padding-bottom: 10px; margin-bottom: 10px; }
+        .report-header h1 { margin: 0; font-size: 20px; color: #333; }
+        
+        /* 추출 데이터 입력 폼 (Editable) */
+        .extracted-data-section { background: #eef2f5; border: 1px solid #ccd5db; padding: 8px; margin-bottom: 10px; border-radius: 5px; font-size: 10px; color: #333; }
+        .extracted-data-section h3 { margin: 0 0 6px 0; font-size: 11px; color: #0056b3; display: flex; justify-content: space-between;}
+        .data-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+        .data-grid div { background: #fff; padding: 3px 6px; border: 1px solid #ddd; border-radius: 3px; display: flex; justify-content: space-between; align-items: center;}
+        .edit-input { width: 55px; padding: 2px; border: 1px solid #1976d2; border-radius: 3px; font-size: 10px; text-align: right; font-weight: bold; color: #1976d2;}
+        .edit-input-str { width: 90px; padding: 2px; border: 1px solid #1976d2; border-radius: 3px; font-size: 10px; font-weight: bold; color: #1976d2;}
+        .readonly-input { background-color: #ffebee; color: #d32f2f; border-color: #d32f2f; cursor: not-allowed; }
+        
+        .sketch-container { text-align: center; margin: 8px 0; }
+        .sketch-container img { max-width: 60%; height: auto; border: 1px solid #ddd; padding: 3px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; text-align: center; font-size: 10px; }
+        th, td { border: 1px solid #333; padding: 4px; vertical-align: middle; }
+        th { background-color: #f0f0f0; font-weight: bold; }
+        
+        .info-table { width: 100%; margin-bottom: 8px; text-align: left; }
+        .info-table th { width: 15%; background-color: #f8f9fa; text-align: center; }
+        .info-table td { width: 35%; padding-left: 8px; }
+
+        .summary-table { width: 100%; margin-top: 10px; margin-bottom: 10px; text-align: left; font-size: 10px; border: 1px solid #333;}
+        .summary-table th { background-color: #f8f9fa; width: 15%; text-align: center; border-right: 1px solid #333; padding: 3px;}
+        .summary-table td { padding: 3px 8px; border-right: 1px solid #333; transition: background-color 0.3s;}
+        .summary-val { width: 15%; text-align: right; padding-right: 10px; font-weight: bold;}
+        
+        .lbl-max { font-size: 9px; color: #d32f2f; font-weight: bold; margin-right: 2px; }
+        .lbl-half { font-size: 9px; color: #1976d2; font-weight: bold; margin-right: 2px; }
+
+        .anchor-calc-section { margin-top: 10px; border: 1px solid #333; padding: 8px; font-size: 10px; text-align: left; background-color: #fafafa; }
+        .anchor-calc-section h3 { margin: 0 0 8px 0; font-size: 11px; color: #333; border-bottom: 1px solid #ccc; padding-bottom: 3px; }
+        .anchor-calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .formula-box { background: #fff; padding: 6px; border: 1px dashed #999; }
+        .final-length { font-size: 12px; font-weight: bold; color: #d32f2f; margin-top: 6px; text-align: center; background: #fff; padding: 6px; border: 1px solid #d32f2f; }
+        .gov-text { color: #d32f2f; font-weight: bold; }
+        .condition-text { color: #0056b3; font-weight: bold; }
+
+        .notes-section { margin-top: 10px; font-size: 8px; color: #333; text-align: left; border-top: 2px dashed #ccc; padding-top: 8px; }
+        .notes-section h3 { margin: 0 0 5px 0; font-size: 10px; }
+        .notes-grid { display: column; column-count: 2; column-gap: 15px; }
+        .notes-grid p { margin: 1px 0; text-indent: -12px; padding-left: 12px; line-height: 1.1; break-inside: avoid; }
+        .notes-grid strong { color: #000; }
+
+        .status-success { color: #2e7d32; font-weight: bold; }
+        .status-wait { color: #d32f2f; font-weight: bold; }
+        
+        /* Appendix Style */
+        .appendix-section { padding: 10px; font-size: 11px; line-height: 1.5; color: #333; }
+        .appendix-section h2 { font-size: 16px; color: #0056b3; border-bottom: 2px solid #0056b3; padding-bottom: 5px; margin-bottom: 15px;}
+        .appendix-box { background: #fdfdfd; border: 1px solid #ddd; border-left: 4px solid #1976d2; padding: 10px; margin-bottom: 12px; border-radius: 4px;}
+        .appendix-box h4 { margin: 0 0 8px 0; font-size: 13px; color: #1976d2;}
+        .appendix-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 10px; text-align: left;}
+        .appendix-table th { background-color: #f1f8e9; width: 22%; text-align: center; border: 1px solid #ccc; padding: 6px;}
+        .appendix-table td { border: 1px solid #ccc; padding: 6px; }
+
+        @media print {
+            body { background-color: #fff; padding: 0; margin: 0; }
+            .control-panel { display: none; }
+            .report-page { width: 100%; min-height: auto; margin: 0; padding: 0; box-shadow: none; }
+            .page-break { page-break-before: always; margin-top: 0; padding-top: 20mm; }
+            .edit-input, .edit-input-str { border: none; background: transparent; color: #333; padding: 0; margin: 0; text-align: right;}
+            .edit-input-str, select.edit-input-str {text-align: left; appearance: none; -webkit-appearance: none;}
+            .calc-btn-row { display: none !important; }
+            @page { size: A4 portrait; margin: 8mm; } 
+        }
+    </style>
+</head>
+<body>
+
+    <div class="control-panel no-print">
+        <h2 style="margin-top:0;">동적 파싱 & 실시간 수정 Report 생성기</h2>
+        <input type="file" id="pdf-file" accept="application/pdf" style="margin-bottom: 10px;" /><br>
+        <p style="font-size: 12px; color: #666; font-weight: bold;">[업데이트] 마찰력 0값 표기 버그 수정 및 Anchor Bolt 전단 안전성(Shear Check) 검토 기능이 추가되었습니다.</p>
+        <button class="btn-print" onclick="window.print()">🖨️ Report 인쇄 / PDF 저장</button>
+    </div>
+
+    <!-- PAGE 1 : Report Body -->
+    <div class="report-page" id="output-section">
+        <div class="report-header">
+            <h1>FOUNDATION LOADING DATA</h1>
+        </div>
+        
+        <div class="extracted-data-section no-print">
+            <h3><span>[입력 폼] 제원 및 하중 (잘못된 파싱 값은 수동 기입 가능)</span> <span id="parse-status" class="status-wait">대기 중... (기본값)</span></h3>
+            <div class="data-grid">
+                <div style="background-color:#e3f2fd; grid-column: span 2;"><strong>Fdn Type:</strong> 
+                    <select id="inp-fdn" class="edit-input-str" style="width:120px;" onchange="runCalculations()">
+                        <option value="slab" selected>Slab (Ms)</option>
+                        <option value="ringwall">Ringwall (Mrw)</option>
+                    </select>
+                </div>
+                <div style="background-color:#e3f2fd;"><strong>Item No:</strong> <input type="text" id="inp-item" class="edit-input-str" style="width:70px;" value="" oninput="runCalculations()"></div>
+                <div style="background-color:#e3f2fd; grid-column: span 2;"><strong>Tank Name:</strong> <input type="text" id="inp-name" class="edit-input-str" style="width:150px;" value="" oninput="runCalculations()"></div>
+                
+                <div style="background-color:#e3f2fd;"><strong>Capacity(m3):</strong> <span><input type="number" id="inp-cap" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                <div style="background-color:#e3f2fd;"><strong>Height(m):</strong> <span><input type="number" id="inp-height" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                <div style="background-color:#e3f2fd;"><strong>I.D. (m):</strong> <span><input type="number" id="inp-id" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                <div style="background-color:#e3f2fd;"><strong>D.Temp(&deg;C):</strong> <span><input type="number" id="inp-temp" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                <div style="background-color:#e3f2fd;" title="Int/Ext Design Pressure"><strong>D.Press:</strong> <input type="text" id="inp-press" class="edit-input-str" style="width:60px; text-align:right;" value="" oninput="runCalculations()"></div>
+
+                <div style="background-color:#e3f2fd;"><strong>Bolt Size(M):</strong> <span><input type="number" id="inp-adia" class="edit-input" value="" oninput="runCalculations()"></span></div>
+                <div style="background-color:#e3f2fd;"><strong>Anchor Qty:</strong> <span><input type="number" id="inp-aqty" class="edit-input" value="" oninput="runCalculations()"> ea</span></div>
+                <div style="background-color:#e3f2fd;"><strong>B.C.D.(mm):</strong> <span><input type="number" id="inp-bcd" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                
+                <div style="background-color:#e1bee7; grid-column: span 1;"><strong>Anchor:</strong>
+                    <select id="inp-anchor-type" class="edit-input-str" style="width:85px; color:#2e7d32; border-color:#2e7d32;" onchange="runCalculations()">
+                        <option value="cast-in" selected>선설치(Cast-in)</option>
+                        <option value="post-installed">후설치(Post-In)</option>
+                    </select>
+                </div>
+                <div style="background-color:#e1bee7; grid-column: span 1;"><strong>Concrete:</strong>
+                    <select id="inp-conc-cond" class="edit-input-str" style="width:85px; color:#2e7d32; border-color:#2e7d32;" onchange="runCalculations()">
+                        <option value="uncracked" selected>비균열(Uncrack)</option>
+                        <option value="cracked">균열(Cracked)</option>
+                    </select>
+                </div>
+
+                <div style="background-color:#fff3e0;"><strong>Chair Ht(mm):</strong> <span><input type="number" id="inp-hchair" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                <div style="background-color:#fff3e0;"><strong>Top Plt(mm):</strong> <span><input type="number" id="inp-tplate" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                <div style="background-color:#fff3e0;"><strong>Proj.(mm):</strong> <span><input type="number" id="inp-proj" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                <div style="background-color:#f1f8e9;" title="API 650 E.6.1.6 기본값: 0.4"><strong>&mu; (Friction):</strong> <span><input type="number" id="inp-mu" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                <div></div>
+
+                <div style="background-color:#f1f8e9;"><strong>WE (kg):</strong> <span><input type="number" id="inp-we-kg" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                <div style="background-color:#f1f8e9;"><strong>WT (kg):</strong> <span><input type="number" id="inp-wt-kg" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                <div style="background-color:#f1f8e9;"><strong>FW (N):</strong> <span><input type="number" id="inp-fw-n" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                <div style="background-color:#f1f8e9;"><strong>MW (N-m):</strong> <span><input type="number" id="inp-mw-nm" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                <div style="background-color:#f1f8e9;"><strong>FE (N):</strong> <span><input type="number" id="inp-fe-n" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                
+                <div style="background-color:#f1f8e9;"><strong>EQ M_rw(N-m):</strong> <span><input type="number" id="inp-me-rw" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                <div style="background-color:#f1f8e9;"><strong>EQ M_s(N-m):</strong> <span><input type="number" id="inp-me-s" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                
+                <div><strong>Btm Dead(Pa):</strong> <span><input type="number" id="inp-db" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                <div><strong>Btm Int(Pa):</strong> <span><input type="number" id="inp-ib" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                <div><strong>Btm Liq(Pa):</strong> <span><input type="number" id="inp-lb" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                
+                <div><strong>Btm Test(Pa):</strong> <span><input type="number" id="inp-tb" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                <div style="background-color:#ffebee;" title="Foundation Type에 따라 자동 계산"><strong>Btm EQ(Pa):</strong> <span><input type="text" id="inp-eb" class="edit-input readonly-input" readonly></span></div>
+                
+                <div><strong>Shell Dead(N/m):</strong> <span><input type="number" id="inp-ds" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                <div><strong>Shell Live(N/m):</strong> <span><input type="number" id="inp-ls" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                <div><strong>Wind Max(N/m):</strong> <span><input type="number" id="inp-ws" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                
+                <div><strong>Shell EQ(N/m):</strong> <span><input type="number" id="inp-es" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                
+                <div><strong>Tb Op(N):</strong> <span><input type="number" id="inp-t-op" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                <div><strong>Tb Op+Wd(N):</strong> <span><input type="number" id="inp-t-opw" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                <div><strong>Tb Test(N):</strong> <span><input type="number" id="inp-t-test" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                <div><strong>Tb EQ(N):</strong> <span><input type="number" id="inp-t-eq" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+                
+                <div><strong>Total F.8.2(N):</strong> <span><input type="number" id="inp-t-f82" class="edit-input" value="" step="any" oninput="runCalculations()"></span></div>
+            </div>
+        </div>
+
+        <table class="info-table">
+            <tbody>
+                <tr>
+                    <th>Item No.</th><td id="val-item"></td>
+                    <th>Tank Name</th><td id="val-name"></td>
+                </tr>
+                <tr>
+                    <th>Capacity (m3)</th><td id="val-capacity"></td>
+                    <th>Design Press. / Temp.</th><td id="val-press-temp"></td>
+                </tr>
+                <tr>
+                    <th>Dim. (ID x H, m)</th><td id="val-dim"></td>
+                    <th>Anchor Bolt</th><td id="val-anchor"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="sketch-container">
+            <img src="Foundation Loading Data for Storange Tank_Image.png" alt="Cone Roof Tank Outline Sketch">
+        </div>
+
+        <table class="summary-table">
+            <tbody>
+                <tr>
+                    <th>WE</th><td>Empty Weight Without Insulation (ton)</td><td class="summary-val" id="sum-we">-</td>
+                    <th>WT</th><td>Total Weight (ton)</td><td class="summary-val" id="sum-wt">-</td>
+                </tr>
+                <tr>
+                    <th>FW</th><td>Horizontal Force by Wind (ton)</td><td class="summary-val" id="sum-fw">-</td>
+                    <th>MW</th><td>Overturning Moment by Wind (ton-m)</td><td class="summary-val" id="sum-mw">-</td>
+                </tr>
+                <tr>
+                    <th>FE</th><td>Horizontal Force by Earthquake (ton)</td><td class="summary-val" id="sum-fe">-</td>
+                    <th id="th-me">ME</th><td id="td-me">Overturning Moment by Earthquake (ton-m) <span style="font-size:8px; color:#666;">(Ms)</span></td><td class="summary-val" id="sum-me">-</td>
+                </tr>
+                <tr>
+                    <th id="th-mp">MP</th><td id="td-mp">Overturning Moment by Earthquake Shell Pressure (ton-m) <span style="font-size:8px; color:#666;">(Mrw)</span></td><td class="summary-val" id="sum-mp">-</td>
+                    <th>MPB</th><td>Overturning Moment by Eq. Bottom Pressure (ton-m)</td><td class="summary-val" id="sum-mpb">-</td>
+                </tr>
+                <tr>
+                    <th>T</th><td colspan="3">Increased Line Load by MP. (ton/m)</td><td class="summary-val" id="sum-t">-</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- 표 상단에 표시되는 명확한 풍속 범례 -->
+        <div style="text-align: right; font-size: 11px; font-weight: bold; margin-bottom: 2px;">
+            <span style="color:#d32f2f;"># : Max Wind Condition</span> &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; <span style="color:#1976d2;">## : 50% of Max Wind</span>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th rowspan="2"></th>
+                    <th colspan="4">OPERATION</th>
+                    <th rowspan="2">HYDRO. AND<br>PNEUMATIC TEST<br>P = <span id="val-p-test">0</span> mmAQ.</th>
+                    <th rowspan="2">EARTHQUAKE<br>KMH = <br>P = <span id="val-p-eq">1500</span> mmAQ.</th>
+                    <th rowspan="2">UPLIFT FOR<br>INTERNAL<br>PRESSURE</th>
+                </tr>
+                <tr>
+                    <th>FULL LIQUID<br>P = <span id="val-p-op1">1500</span> mmAQ.</th>
+                    <th>EMPTY<br>P = <span id="val-p-op2">1500</span> mmAQ.</th>
+                    <th>FULL LIQUID<br>P = 0 mmAQ.</th>
+                    <th>EMPTY<br>P = 0 mmAQ.</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>DW1</strong><br>(ton/m2)</td>
+                    <td><strong>A</strong><br><span id="val-A">-</span></td>
+                    <td><strong>F</strong><br><span id="val-F">-</span></td>
+                    <td><strong>K</strong><br><span id="val-K">-</span></td>
+                    <td><strong>P</strong><br><span id="val-P">-</span></td>
+                    <td><strong>U</strong><br><span id="val-U">-</span></td>
+                    <td>Max <strong>Z</strong> <span id="val-Z">-</span><br>Min <strong>AA</strong> <span id="val-AA">-</span></td>
+                    <td><strong>AD</strong><br><span id="val-AD">0.00</span></td>
+                </tr>
+                <tr>
+                    <td><strong>W1</strong><br>(ton/m)</td>
+                    <td><strong>B</strong> <span id="val-B">-</span><br><span class="lbl-max">#</span> <strong>C</strong> <span id="val-C">-</span></td>
+                    <td><strong>G</strong> <span id="val-G">-</span><br><span class="lbl-max">#</span> <strong>H</strong> <span id="val-H">-</span></td>
+                    <td><strong>L</strong> <span id="val-L">-</span><br><span class="lbl-max">#</span> <strong>M</strong> <span id="val-M">-</span></td>
+                    <td><strong>Q</strong> <span id="val-Q">-</span><br><span class="lbl-max">#</span> <strong>R</strong> <span id="val-R">-</span></td>
+                    <td><strong>V</strong> <span id="val-V">-</span><br><span class="lbl-half">##</span> <strong>W</strong> <span id="val-W">-</span></td>
+                    <td><strong>AB</strong><br><span id="val-AB">-</span></td>
+                    <td><strong>AE</strong><br><span id="val-AE">0.00</span></td>
+                </tr>
+                <tr>
+                    <td><strong>W2</strong><br>(ton/one)</td>
+                    <td><strong>D</strong> <span id="val-D">-</span><br><span class="lbl-max">#</span> <strong>E</strong> <span id="val-E">-</span></td>
+                    <td><strong>I</strong> <span id="val-I">-</span><br><span class="lbl-max">#</span> <strong>J</strong> <span id="val-J">-</span></td>
+                    <td><strong>N</strong> <span id="val-N">0.00</span><br><span class="lbl-max">#</span> <strong>O</strong> <span id="val-O">-</span></td>
+                    <td><strong>S</strong> <span id="val-S">0.00</span><br><span class="lbl-max">#</span> <strong>T</strong> <span id="val-T">-</span></td>
+                    <td><strong>X</strong> <span id="val-X">-</span><br><span class="lbl-half">##</span> <strong>Y</strong> <span id="val-Y">-</span></td>
+                    <td><strong>AC</strong><br><span id="val-AC">-</span></td>
+                    <td><strong>AF</strong> <span id="val-AF">0.00</span><br><span class="lbl-max">#</span> <strong>AG</strong> <span id="val-AG">-</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- 앵커 볼트 계산 섹션 -->
+        <div class="anchor-calc-section">
+            <h3>Anchor Bolt Effective Depth & Length Selection (KDS 14 20 54 / ACI 318)</h3>
+            
+            <p style="margin-top:0; margin-bottom: 5px; font-size:10px; color:#555;">
+                * <strong>비균열(Uncracked):</strong> 인장응력이 파괴모듈러스 이하로 균열이 없는 조건 (강도계수 높음).<br>
+                * <strong>균열(Cracked):</strong> 지진, 외부 하중 등으로 콘크리트 균열이 예상되는 조건 (보수적 강도계수 적용).
+            </p>
+
+            <div class="anchor-calc-grid">
+                <div class="formula-box">
+                    <strong>1. Tension Design Parameters</strong><br>
+                    - Max Tension (T<sub>u</sub>) = <span id="calc-tu"></span> N <br>
+                    &nbsp;&nbsp;<span style="font-size:11px;">[ Governing Case: <span id="calc-tu-gov" class="gov-text"></span> ]</span><br>
+                    - Concrete Cond = <span id="calc-conc-text" class="condition-text"></span><br>
+                    - Bolt Diameter (d) = <span id="calc-d"></span> mm<br>
+                    - Strength Reduction Factor (&phi;) = 0.75<br>
+                    - Chair Height (h<sub>chair</sub>) = <span id="calc-hchair"></span> mm<br>
+                    - Top Plate (t<sub>plate</sub>) = <span id="calc-tplate"></span> mm<br>
+                    - Projection = <span id="calc-proj"></span> mm
+                </div>
+                <div class="formula-box">
+                    <strong>2. Effective Embedment Depth (h<sub>ef</sub>)</strong><br>
+                    - Breakout: h<sub>ef,1</sub> = [T<sub>u</sub> / (&phi; &times; k<sub>c</sub> &times; &radic;f<sub>ck</sub>)]<sup>2/3</sup><br>
+                    &nbsp;&nbsp;h<sub>ef,1</sub> = [<span id="calc-tu-val"></span> / (0.75 &times; <span id="calc-kc"></span> &times; &radic;24)]<sup>2/3</sup> = <strong><span id="calc-hef1"></span> mm</strong><br>
+                    - Min Depth: h<sub>ef,2</sub> = 12 &times; d = 12 &times; <span id="calc-d-min"></span> = <strong><span id="calc-hef2"></span> mm</strong><br>
+                    - Required (Max): h<sub>ef,req</sub> = <strong><span id="calc-hefreq"></span> mm</strong>
+                </div>
+                <!-- 전단력 및 마찰력 비교 명시 및 추가 검토 (Update) -->
+                <div class="formula-box" style="grid-column: span 2;">
+                    <strong>3. Base Shear & Friction Check (API 650 E.6.1.6)</strong><br>
+                    - Friction Coefficient (&mu;) = <span id="calc-mu"></span><br>
+                    - Operating Weight (W<sub>T</sub>) = <span id="calc-wt-n"></span> N, Total Net Uplift (U) = <span id="calc-u-tot"></span> N<br>
+                    - Friction Resistance (F<sub>fric</sub>) = &mu; &times; (W<sub>T</sub> - U) = <strong><span id="calc-fric"></span> N</strong><br>
+                    - Max Base Shear (V<sub>max</sub>) = max(FW, FE) = <strong><span id="calc-vmax"></span> N</strong><br>
+                    <div style="margin-top: 5px; padding: 4px; background: #fffde7; border: 1px dashed #ccc;">
+                        - Result: <span id="calc-shear-res" style="font-size:12px;"></span>
+                    </div>
+                    <!-- 앵커 전단 강도 검토 Box (마찰력 부족 시 표시됨) -->
+                    <div id="shear-calc-box" style="margin-top: 5px; padding: 6px; background: #ffebee; border: 1px dashed #d32f2f; display: none;">
+                        <strong>[추가 검토] Anchor Bolt Steel Shear Check (KDS 14 20 54 / ACI 318)</strong><br>
+                        - Shear per Bolt (V<sub>u,bolt</sub>) = V<sub>max</sub> / Anchor Qty = <strong><span id="calc-vu-bolt"></span> N</strong><br>
+                        - Bolt Effective Area (A<sub>se</sub>) &approx; 0.78 &times; (&pi;d&sup2;/4) = <strong><span id="calc-ase"></span> mm&sup2;</strong><br>
+                        - Bolt Shear Capacity (&phi;V<sub>sa</sub>) = 0.65 &times; 0.6 &times; A<sub>se</sub> &times; f<sub>uta</sub>(517MPa) = <strong><span id="calc-phivsa"></span> N</strong><br>
+                        - Result: <span id="calc-bolt-shear-res" style="font-size:12px;"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="final-length">
+                Total Anchor Bolt Length (L) = h<sub>ef,req</sub> + h<sub>chair</sub> + t<sub>plate</sub> + Projection = <span id="calc-l-raw"></span> mm<br>
+                &rArr; Selected Length (10mm Increment): <span id="calc-l-final" style="font-size:16px; text-decoration:underline;"></span> mm
+            </div>
+        </div>
+
+        <div class="notes-section">
+            <h3>* Note: Load Calculation Formulas</h3>
+            <div style="font-weight:bold; color:#d32f2f; margin-bottom:5px; font-size:9px;">
+                # : Max Wind Condition (100% Wind) &nbsp;&nbsp;&nbsp; ## : 50% of Max Wind Velocity
+            </div>
+            <div class="notes-grid">
+                <p><strong>WE:</strong> Empty Weight Without Insulation (Metal Weight only)</p>
+                <p><strong>WT:</strong> Total Weight = WE + Liquid Content + Insulation + Attachments</p>
+                <p><strong>FW:</strong> Horizontal Force by Wind = Design Wind Pressure &times; Projected Area</p>
+                <p><strong>MW:</strong> Overturning Moment by Wind (Calculated at base)</p>
+                <p><strong>FE:</strong> Horizontal Force by Earthquake (Seismic Base Shear)</p>
+                <p><strong>ME:</strong> Overturning Moment by Earthquake (Slab Moment, M<sub>s</sub>)</p>
+                <p><strong>MP:</strong> Overturning Moment by Earthquake Shell Pressure (Ringwall Moment, M<sub>rw</sub>)</p>
+                <p><strong>MPB:</strong> Overturning Moment by Eq. Bottom Pressure = ME - MP (Calculated approximately)</p>
+                <p><strong>T:</strong> Increased Line Load by MP = Seismic Shell Line Load (V)</p>
+                <p><strong>Base Shear Check:</strong> Friction Resistance (F<sub>fric</sub>) = &mu; &times; (WT - U). If F<sub>fric</sub> &lt; Max(FW, FE), anchors must resist shear.</p>
+                <p><strong>A:</strong> Bottom Plate Static Pressure + Product Static Pressure + Design Internal Pressure + Flolating Roof Static Pressure</p>
+                <p><strong>B, G:</strong> AsBuilt Metal Load by Shell, Fixed Roof & Appurtenances + Live Load - Uplift Load by Internal Pressure</p>
+                <p><strong>C, H:</strong> AsBuilt Metal Load by Shell, Fixed Roof & Appurtenances + Live Load - Uplift Load by Internal Pressure + Load by Wind (# Max Wind)</p>
+                <p><strong>D, I:</strong> (Uplift Load by Internal Pressure - Corroded Metal Load by Shell, Fixed Roof & Appurtenances) / Number of Anchor Bolt</p>
+                <p><strong>E, J:</strong> (Uplift Load by Internal Pressure + Uplift Load by Wind - Corroded Metal Load by Shell, Fixed Roof & Appurtenances) / Number of Anchor Bolt (# Max Wind)</p>
+                <p><strong>F:</strong> Bottom Plate Static Pressure + Design Internal Pressure + Flolating Roof Static Pressure</p>
+                <p><strong>K:</strong> Bottom Plate Static Pressure + Product Static Pressure + Flolating Roof Static Pressure</p>
+                <p><strong>L, Q:</strong> AsBuilt Metal Load by Shell, Fixed Roof & Appurtenances + Live Load</p>
+                <p><strong>M, R:</strong> AsBuilt Metal Load by Shell, Fixed Roof & Appurtenances + Live Load + Load by Wind (# Max Wind)</p>
+                <p><strong>N, S, AD, AE:</strong> Always 0 (Zero)</p>
+                <p><strong>O, T:</strong> (Uplift Load by Wind - Corroded Metal Load by Shell, Fixed Roof & Appurtenances) / Number of Anchor Bolt. (# Max Wind. Enter 0 if negative)</p>
+                <p><strong>P:</strong> Bottom Plate Static Pressure + Flolating Roof Static Pressure</p>
+                <p><strong>U:</strong> Bottom Plate Static Pressure + Test Water Static Pressure + Penumatic Test Pressure + Flolating Roof Static Pressure</p>
+                <p><strong>V:</strong> AsBuilt Metal Load by Shell, Fixed Roof & Appurtenances - Uplift Load by Test Pressure</p>
+                <p><strong>W:</strong> AsBuilt Metal Load by Shell, Fixed Roof & Appurtenances - Uplift Load by Test Pressure + Load by Wind (## at 50% of Max Wind Velocity)</p>
+                <p><strong>X:</strong> (Uplift Load by Test Pressure - AsBuilt Metal Load by Shell, Fixed Roof & Appurtenances) / Number of Anchor Bolt</p>
+                <p><strong>Y:</strong> (Uplift Load by Test Pressure + Uplift Load by Wind at 50% of Max Wind Velocity - AsBuilt Metal Load ...) / Number of Anchor Bolt (## 50% Wind)</p>
+                <p><strong>Z:</strong> Bottom Plate Static Pressure (*1) + Product Static Pressure(*1) + Floating Roof Static Pressure(*1) + Design Internal Pressure + (Overturning Moment by Eq. Bottom Pressure / Section Modulus)</p>
+                <p><strong>AA:</strong> Bottom Plate Static Pressure(*1) + Product Static Pressure(*1) + Floating Roof Static Pressure(*1) + Design Internal Pressure - (Overturning Moment by Eq. Bottom Pressure / Section Modulus)</p>
+                <p><strong>AB:</strong> AsBuilt Metal Load by Shell, Fixed Roof & Appurtenances (*1) + Live Load + Load by Seismic</p>
+                <p><strong>AC:</strong> (Uplift Load by Internal Pressure + Uplift Load by Seismic - Corroded Metal Load by Shell...) / Number of Anchor Bolt</p>
+                <p><strong>AF:</strong> Uplift Load by 1.25 times Test Pressure - Asbuilt Material Load by Shell, Fixed Roof & Appurtenances</p>
+                <p><strong>AG:</strong> Uplift Load by 1.5 times Design Internal Pressure + Uplift Load by Wind - Corroded Material Load...</p>
+                <p style="margin-top: 5px; color: #d32f2f;"><em>*1: Vertical Seismic Coefficient shall be taken into account.</em></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE 2 : Appendix (Manual Guide) -->
+    <div class="report-page page-break" id="appendix-section">
+        <div class="appendix-section">
+            <h2>[부록] 제원 및 하중 데이터 수동 입력 가이드 (Calculation & Search Guide)</h2>
+            <p>PDF 양식 변경 또는 문자 인식(OCR) 한계로 인해 파란색 폼에 값이 빈칸으로 남을 경우, 강도계산서(Strength Calculation Sheet)에서 아래 안내된 위치를 참고하여 직접 값을 기입해 주시기 바랍니다.</p>
+            
+            <p style="color:#d32f2f; font-weight:bold; margin-top: 10px;">&#9888; 주의: Ton 단위로 표기된 값을 N (뉴턴)으로 변환할 때는 9806.65 를 곱해야 합니다. (1 tonf = 9806.65 N)</p>
+
+            <div class="appendix-box">
+                <h4>1. 자중 및 전단/모멘트 (Weight & Shear/Moment)</h4>
+                <table class="appendix-table">
+                    <tr><th>항목</th><th>PDF 내 탐색 위치 및 키워드</th></tr>
+                    <tr><td><strong>WE (kg)</strong></td><td>'Weight Summary' 테이블의 <strong>Empty Weight</strong> 값 입력 (단위 kg)</td></tr>
+                    <tr><td><strong>WT (kg)</strong></td><td>'Weight Summary' 테이블의 <strong>Operating Weight</strong> 또는 <strong>Total Weight</strong> 값 입력 (단위 kg)</td></tr>
+                    <tr>
+                        <td><strong>FW (N)</strong></td>
+                        <td>
+                            'Wind Code' 섹션의 <strong>Total Wind Force (F<sub>w</sub>)</strong> 검색. (단위가 ton인 경우 9806.65를 곱하여 N으로 입력)<br>
+                            <div class="no-print" style="margin-top: 6px; background: #e3f2fd; padding: 8px; border-radius: 4px; border: 1px solid #90caf9; font-size: 10px;">
+                                <strong style="color: #0d47a1;">[도우미] FW (수평 풍하중 전단력) 수동 계산기</strong><br>
+                                <span style="color:#555;">항목이 생략된 경우 'WIND LOAD CALCULATION' 표에서 <strong>PF(설계풍력)</strong>, <strong>B(외경)</strong>, <strong>H1(높이)</strong> 값을 찾아 입력하세요.</span>
+                                <div style="margin-top: 6px; display:flex; gap:6px; align-items:center;">
+                                    PF: <input type="number" id="app-pf" class="edit-input" style="width:45px; border-color:#0d47a1;" oninput="calcFwHelper()"> N/m&sup2; &times; 
+                                    B: <input type="number" id="app-b" class="edit-input" style="width:40px; border-color:#0d47a1;" oninput="calcFwHelper()"> m &times; 
+                                    H1: <input type="number" id="app-h" class="edit-input" style="width:40px; border-color:#0d47a1;" oninput="calcFwHelper()"> m &times; 
+                                    저감계수: <input type="number" id="app-k" class="edit-input" style="width:40px; border-color:#0d47a1;" value="0.65" oninput="calcFwHelper()"> 
+                                    = <strong id="app-fw-res" style="color:#d32f2f; min-width:45px; display:inline-block; text-align:right; font-size:12px;">0</strong> N
+                                    <button type="button" class="calc-btn-row" onclick="applyFw()" style="cursor:pointer; background:#1976d2; color:#fff; border:none; padding:4px 8px; border-radius:3px; margin-left:10px;">위 폼에 적용하기</button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr><td><strong>MW (N-m)</strong></td><td>'Wind Code' 섹션의 <strong>Overturning Moment by Wind (M<sub>w</sub>)</strong> 검색.</td></tr>
+                    <tr><td><strong>FE (N)</strong></td><td>'Seismic Code' 섹션 하단의 <strong>Final Base Shear (V)</strong> 검색. (또는 C<sub>s</sub> &times; W<sub>o</sub>의 최종값)</td></tr>
+                    <tr><td><strong>EQ M_rw (N-m)</strong></td><td>'Seismic Code' 섹션의 <strong>Ringwall Overturning Moment (M<sub>rw</sub>)</strong> 검색.</td></tr>
+                    <tr><td><strong>EQ M_s (N-m)</strong></td><td>'Seismic Code' 섹션의 <strong>Slab Overturning Moment (M<sub>s</sub>)</strong> 검색.</td></tr>
+                </table>
+            </div>
+
+            <div class="appendix-box">
+                <h4>2. 바닥면 압력 (Area Pressures - Pa 단위)</h4>
+                <p style="margin-bottom: 5px; color:#555;">보통 문서 후반부의 'Foundation Load Summary' 테이블에 명시되어 있습니다.</p>
+                <table class="appendix-table">
+                    <tr><th>항목</th><th>PDF 내 탐색 위치 및 키워드</th></tr>
+                    <tr><td><strong>Btm Dead</strong></td><td>Bottom Dead Load. 수식: t<sub>b</sub> &times; &gamma;<sub>b</sub> &times; 9.81 결과값.</td></tr>
+                    <tr><td><strong>Btm Int</strong></td><td>Internal Pressure. 수식: P<sub>i</sub> 결과값.</td></tr>
+                    <tr><td><strong>Btm Liq</strong></td><td>Stored Liquid. 수식: G &times; H &times; &gamma;<sub>w</sub> &times; 9.81 결과값.</td></tr>
+                    <tr><td><strong>Btm Test</strong></td><td>Hydrostatic Test. 수식: H &times; &gamma;<sub>w</sub> &times; 9.81 결과값.</td></tr>
+                </table>
+            </div>
+
+            <div class="appendix-box">
+                <h4>3. 쉘 선하중 (Shell Line Loads - N/m 단위)</h4>
+                <p style="margin-bottom: 5px; color:#555;">'Foundation Load Summary' 테이블의 Shell 구간 하중을 기입합니다.</p>
+                <table class="appendix-table">
+                    <tr><th>항목</th><th>PDF 내 탐색 위치 및 키워드</th></tr>
+                    <tr><td><strong>Shell Dead</strong></td><td>Dead Load 파트의 Shell 라인 하중. 수식: (W<sub>s</sub> + W<sub>rs</sub>) / (&pi; &times; D)</td></tr>
+                    <tr><td><strong>Shell Live</strong></td><td>Minimum Roof Live Load 파트의 Shell 라인 하중.</td></tr>
+                    <tr><td><strong>Wind Max</strong></td><td>Wind (horizontal wind component) 파트의 Shell 라인 하중. 수식: 2 &times; H<sub>s</sub><sup>2</sup> &times; P<sub>WS</sub> / (&pi; &times; D)</td></tr>
+                    <tr><td><strong>Shell EQ</strong></td><td>Seismic 파트의 Shell 라인 하중. 수식: [4 &times; M<sub>rw</sub> / D + 0.4 &times; (W<sub>s</sub>+W<sub>rss</sub>) &times; A<sub>v</sub>] / (&pi; &times; D)</td></tr>
+                </table>
+            </div>
+
+            <div class="appendix-box">
+                <h4>4. 앵커 볼트 인장력 (Anchor Bolt Tensions - N 단위)</h4>
+                <p style="margin-bottom: 5px; color:#555;">'Anchorage' 섹션 내부의 'Anchor Bolt Design' 또는 'Uplift Loads' 테이블을 확인합니다.</p>
+                <table class="appendix-table">
+                    <tr><th>항목</th><th>PDF 내 탐색 위치 및 키워드</th></tr>
+                    <tr><td><strong>Tb Op</strong></td><td>Design Internal Pressure 파트의 T<sub>b</sub> 값 (Uplift가 없으면 0)</td></tr>
+                    <tr><td><strong>Tb Op+Wd</strong></td><td>Design pressure plus Wind 파트의 T<sub>b</sub> 값</td></tr>
+                    <tr><td><strong>Tb Test</strong></td><td>Test Condition 파트의 T<sub>b</sub> 값</td></tr>
+                    <tr><td><strong>Tb EQ</strong></td><td>Seismic 또는 Design pressure plus Seismic 파트의 T<sub>b</sub> 최대값</td></tr>
+                    <tr><td><strong>Total F.8.2</strong></td><td>Counterbalancing Weight Required 파트의 최종 요구 하중 (N 단위)</td></tr>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() { runCalculations(); }; 
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+        // ----------------------------------------------------
+        // 모든 폼 요소 빈칸(초기화) 처리 함수
+        // ----------------------------------------------------
+        function clearAllInputs() {
+            const inputIds = [
+                'inp-item', 'inp-name', 'inp-cap', 'inp-height', 'inp-id', 'inp-temp', 'inp-press',
+                'inp-adia', 'inp-aqty', 'inp-bcd', 'inp-hchair', 'inp-tplate', 'inp-proj', 'inp-mu',
+                'inp-we-kg', 'inp-wt-kg', 'inp-fw-n', 'inp-mw-nm', 'inp-fe-n', 'inp-me-rw', 'inp-me-s',
+                'inp-db', 'inp-ib', 'inp-lb', 'inp-tb', 'inp-ds', 'inp-ls', 'inp-ws', 'inp-es',
+                'inp-t-op', 'inp-t-opw', 'inp-t-test', 'inp-t-eq', 'inp-t-f82'
+            ];
+            inputIds.forEach(id => {
+                document.getElementById(id).value = "";
+            });
+            
+            // 부록 FW 계산기 초기화
+            document.getElementById('app-pf').value = "";
+            document.getElementById('app-b').value = "";
+            document.getElementById('app-h').value = "";
+            document.getElementById('app-k').value = "0.65";
+            document.getElementById('app-fw-res').innerText = "0";
+        }
+
+        document.getElementById('pdf-file').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // 새 파일 업로드 시 이전 값 완벽 리셋
+            clearAllInputs();
+            document.getElementById('parse-status').className = 'status-wait';
+            document.getElementById('parse-status').innerText = "추출 중...";
+
+            const fileReader = new FileReader();
+            fileReader.onload = function() {
+                extractTextFromPDF(new Uint8Array(this.result));
+            };
+            fileReader.readAsArrayBuffer(file);
+        });
+
+        // ----------------------------------------------------
+        // 부록(Appendix) FW 도우미 계산기 함수
+        // ----------------------------------------------------
+        function calcFwHelper() {
+            let pf = parseFloat(document.getElementById('app-pf').value) || 0;
+            let b = parseFloat(document.getElementById('app-b').value) || 0;
+            let h = parseFloat(document.getElementById('app-h').value) || 0;
+            let k = parseFloat(document.getElementById('app-k').value) || 0;
+            
+            let fw = pf * b * h * k;
+            document.getElementById('app-fw-res').innerText = fw > 0 ? fw.toFixed(1) : "0";
+        }
+
+        function applyFw() {
+            let fwStr = document.getElementById('app-fw-res').innerText;
+            if(fwStr !== "0" && fwStr !== "") {
+                document.getElementById('inp-fw-n').value = fwStr;
+                runCalculations();
+                alert("계산된 FW 값이 상단 입력 폼에 성공적으로 적용되었습니다.");
+                window.scrollTo({ top: 0, behavior: 'smooth' }); // 상단으로 부드럽게 스크롤
+            } else {
+                alert("입력된 값이 부족하여 FW를 적용할 수 없습니다. PF, B, H1을 입력해주세요.");
+            }
+        }
+
+        // ----------------------------------------------------
+        // 초정밀 정규식: 다중 타겟 패턴 검색 (Fallback 지원)
+        // ----------------------------------------------------
+        function parseOpt(text, regexes) {
+            for (let rx of regexes) {
+                let m = text.match(rx);
+                if (m && m[1]) {
+                    let v = parseFloat(m[1].replace(/,/g, ''));
+                    if (!isNaN(v)) return v;
+                }
+            }
+            return null;
+        }
+
+        function updateIfFound(id, text, regexes) {
+            let val = parseOpt(text, regexes);
+            if (val !== null) {
+                document.getElementById(id).value = val;
+            }
+        }
+        
+        function updateStrIfFound(id, text, regexes) {
+            for (let rx of regexes) {
+                let m = text.match(rx);
+                if (m && m[1]) {
+                    document.getElementById(id).value = m[1].trim();
+                    return;
+                }
+            }
+        }
+
+        function getVal(id) { return parseFloat(document.getElementById(id).value) || 0; }
+        function getValStr(id) { return document.getElementById(id).value || ""; }
+        function setValue(id, val) { document.getElementById(id).value = val; }
+
+        async function extractTextFromPDF(pdfData) {
+            try {
+                const pdf = await pdfjsLib.getDocument(pdfData).promise;
+                let text = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    text += textContent.items.map(item => item.str).join(' ') + ' \n';
+                }
+                
+                // --- 1. 기본 제원 ---
+                updateStrIfFound('inp-item', text, [
+                    /Item No(?:.*?:)?\s*([A-Z0-9\-]+)/i
+                ]);
+                updateStrIfFound('inp-name', text, [
+                    /Equipment Name(?:.*?:)?\s*([A-Za-z0-9\s]+?)\s*(?:Applicable|Rev)/i
+                ]);
+                
+                updateIfFound('inp-cap', text, [
+                    /Storage Capacity\s*(?:=|\:)?\s*([\d\.]+)\s*m3/i, 
+                    /Capacity\s*([\d\.]+)\s*liters/i
+                ]);
+                updateIfFound('inp-height', text, [ /Tank Height \(H\).*?([\d\.]+)/i ]);
+                updateIfFound('inp-id', text, [ /Inside Tank Diameter.*?([\d\.]+)/i ]);
+                updateIfFound('inp-temp', text, [ /Design Temperature.*?([\-\d\.]+)/i ]);
+                updateStrIfFound('inp-press', text, [
+                    /Design Pressure\s*\(Int\.\/Ext\.\).*?([\-\d\.]+)\/([\-\d\.]+)/i
+                ]);
+
+                // 앵커 제원 (M24 x 8 set 등 변칙 패턴 대응)
+                updateIfFound('inp-aqty', text, [
+                    /(?:Number of Anchor Bolts?|x)\s*(\d+)\s*(?:ea|set|sets)/i,
+                    /Anchor Bolt\s*.*?[M|m]\d+\s*x\s*(\d+)/i
+                ]);
+                updateIfFound('inp-adia', text, [
+                    /(?:Anchor Bolt|M|m)\s*(\d+)\s*(?:x|\-)/i
+                ]);
+                updateIfFound('inp-bcd', text, [ /Bolt circle.*?([\d,\.]+)/i ]);
+                
+                // 체어 제원
+                updateIfFound('inp-hchair', text, [ /Chair Height,\s*h\s*(?:\|\s*)?([\d\.]+)/i ]);
+                updateIfFound('inp-tplate', text, [ /Top Plate Thickness,\s*c\s*(?:\|\s*)?([\d\.]+)/i ]);
+                updateIfFound('inp-proj', text, [ /Bottom plate projection outside shell\s*(?:\|\s*)?([\d\.]+)/i ]);
+                
+                // Mu 기본값 설정 (빈칸 방지용)
+                let mu = parseOpt(text, [ /Friction Coefficient.*?([\d\.]+)/i ]);
+                if (mu === null) mu = 0.4;
+                setValue('inp-mu', mu);
+
+                // --- 2. 동적 하중 추출 (Multi-Fallback) ---
+                
+                // WE / WT
+                updateIfFound('inp-we-kg', text, [
+                    /Empty Weight\s*\(kg\)\s*(?:\||\:)?\s*([\d,\.]+)/i,
+                    /Empty Weight\s*\(kg\).*?(?:\n|\|)\s*([\d,\.]+)/i
+                ]);
+                updateIfFound('inp-wt-kg', text, [
+                    /Operating Weight\s*\(kg\)\s*(?:\||\:)?\s*([\d,\.]+)/i,
+                    /Operating Weight\s*\(kg\).*?(?:\n|\|)\s*([\d,\.]+)/i
+                ]);
+
+                // FW (Wind Shear - 103에서는 Total Wind Force가 명시 안되므로 Line load 추적 보완)
+                let fw = parseOpt(text, [
+                    /F_w\s*=\s*.*?=\s*([\d,\.]+)\s*N/i,
+                    /Total Wind Force.*?=\s*([\d,\.]+)\s*N/i
+                ]);
+                if (fw === null) {
+                    let pfMatches = [...text.matchAll(/(?:설계풍력|PF|Total Wind Force)[\s\S]{0,50}?=\s*([\d,\.]+)/gi)];
+                    if (pfMatches.length > 0) {
+                        let pfRaw = parseFloat(pfMatches[pfMatches.length - 1][1].replace(/,/g, ''));
+                        let dia = getVal('inp-id');
+                        let ht = getVal('inp-height');
+                        // KDS 0.65 계수 곱연산 반영
+                        if (pfRaw > 1000) fw = pfRaw * 0.65 * dia * ht;
+                    }
+                }
+                if (fw === null) {
+                    let fwTon = parseOpt(text, [/Horizontal Force by Wind.*?\(ton\)\s*([\d,\.]+)/i]);
+                    if (fwTon !== null) fw = fwTon * 9806.65;
+                }
+                if (fw !== null) setValue('inp-fw-n', fw);
+
+                // MW (Wind Moment)
+                updateIfFound('inp-mw-nm', text, [
+                    /M_w\s*=(?:[\s\S]{0,150}?)=\s*([\d,\.]+)\s*N-m/i,
+                    /M_w\s*=(?:[\s\S]{0,120}?)([\d,\.]+)\s*N-m/i,
+                    /Overturning Moment by Wind.*?([\d,\.]+)\s*N-m/i
+                ]);
+
+                // FE (Seismic Base Shear - KDS 최우선 검색)
+                let fe = null;
+                let kdsMatches = [...text.matchAll(/(?:Final\s*Base\s*Shear|Cs\s*\(\s*=\s*V\s*\)|V\s*ver)[\s\S]{0,80}?=\s*([\d,\.]+)\s*x\s*Wo/gi)];
+                if (kdsMatches.length > 0) {
+                    let vMatches = [...text.matchAll(/V\s*=\s*\([^\)]+\)\^0\.5\s*=\s*([\d,\.]+)\s*N/gi)];
+                    if (vMatches.length > 0) fe = parseFloat(vMatches[vMatches.length - 1][1].replace(/,/g, ''));
+                }
+                if (!fe) {
+                    fe = parseOpt(text, [
+                        /V\s*=\s*\([\d,\.]+\^2\s*\+\s*[\d,\.]+\^2\)\^0\.5\s*=\s*([\d,\.]+)\s*N/i,
+                        /V\s*=\s*\(V_i\^2\s*\+\s*V_c\^2\)\^0\.5\s*=\s*([\d,\.]+)\s*N/i,
+                        /Total Seismic Base Shear.*?=\s*([\d,\.]+)\s*N/i
+                    ]);
+                }
+                if (fe !== null) setValue('inp-fe-n', fe);
+
+                // ME / MP
+                updateIfFound('inp-me-s', text, [
+                    /M_s\s*=(?:[\s\S]{0,150}?)=\s*\[?([\d,\.]+)\s*N-m/i,
+                    /M_s\s*=\s*.*?\s*([\d,\.]+)\s*N-m/i
+                ]);
+                updateIfFound('inp-me-rw', text, [
+                    /M_rw\s*=(?:[\s\S]{0,150}?)=\s*([\d,\.]+)\s*N-m/i,
+                    /M_rw\s*=\s*.*?\s*([\d,\.]+)\s*N-m/i
+                ]);
+
+                // Btm Area Pressures
+                updateIfFound('inp-db', text, [
+                    /Bottom\s*=\s*t_b\s*\*\s*\\gamma_b.*?(?:=\s*|\|\s*)([\d,\.]+)\s*Pa/i,
+                    /Dead Load[\s\S]{0,150}?Bottom.*?=\s*([\d,\.]+)\s*Pa/i
+                ]);
+                updateIfFound('inp-ib', text, [
+                    /Bottom\s*=\s*P_i\s*=\s*([\d,\.]+)\s*Pa/i,
+                    /Internal Pressure[\s\S]{0,100}?Bottom.*?=\s*([\d,\.]+)\s*Pa/i
+                ]);
+                updateIfFound('inp-lb', text, [
+                    /Bottom\s*=\s*G\s*\*\s*H\s*\*\s*\\gamma_w.*?(?:=\s*|\|\s*)([\d,\.]+)\s*Pa/i,
+                    /Stored Liquid[\s\S]{0,150}?Bottom.*?=\s*([\d,\.]+)\s*Pa/i
+                ]);
+                updateIfFound('inp-tb', text, [
+                    /Bottom\s*=\s*H\s*\*\s*\\gamma_w.*?(?:=\s*|\|\s*)([\d,\.]+)\s*Pa/i,
+                    /Hydrostatic Test[\s\S]{0,150}?Bottom.*?=\s*([\d,\.]+)\s*Pa/i
+                ]);
+                
+                // Shell Line Loads
+                updateIfFound('inp-ds', text, [
+                    /(?:Shell|Dead Load)[\s\S]{0,80}?(?:W_s|W_5).*?=\s*([\d,\.]+)\s*N\/m/i,
+                    /Dead Load[\s\S]{0,150}?Shell.*?=\s*([\d,\.]+)\s*N\/m/i
+                ]);
+                updateIfFound('inp-ls', text, [
+                    /(?:Shell|Live Load)[\s\S]{0,80}?L_r.*?=\s*([\d,\.]+)\s*N\/m/i,
+                    /Roof Live Load[\s\S]{0,100}?Shell.*?=\s*([\d,\.]+)\s*N\/m/i
+                ]);
+                updateIfFound('inp-ws', text, [
+                    /Shell\s*=\s*2\s*\*\s*H_s\^2\s*\*\s*P_WS[\s\S]{0,80}?=\s*\[?([\d,\.]+)\s*N\/m/i,
+                    /horizontal wind component[\s\S]{0,100}?Shell.*?=\s*([\d,\.]+)\s*N\/m/i
+                ]);
+                updateIfFound('inp-es', text, [
+                    /(?:Shell|Seismic)[\s\S]{0,80}?4\s*\*\s*M_{?rw}?[\s\S]{0,120}?=\s*([\d,\.]+)\s*N\/m/i,
+                    /Seismic[\s\S]{0,150}?Shell=\[.*?=\s*([\d,\.]+)\s*N\/m/i
+                ]);
+                
+                // Anchor Tensions
+                updateIfFound('inp-t-op', text, [
+                    /Design Internal Pressure[\s\S]{0,120}?T_b\s*=(?:[^=N]*?=\s*)?([\d,\.]+)\s*N/i
+                ]);
+                updateIfFound('inp-t-opw', text, [
+                    /Design pressure plus Wind[\s\S]{0,120}?T_b\s*=(?:[^=N]*?=\s*)?([\d,\.]+)\s*N/i
+                ]);
+                updateIfFound('inp-t-test', text, [
+                    /Test Condition[\s\S]{0,120}?T_b\s*=(?:[^=N]*?=\s*)?([\d,\.]+)\s*N/i
+                ]);
+                updateIfFound('inp-t-eq', text, [
+                    /Seismic[\s\S]{0,150}?T_b\s*=(?:[^=N]*?=\s*)?([\d,\.]+)\s*N/i
+                ]);
+                updateIfFound('inp-t-f82', text, [
+                    /Counterbalancing Weight Required\s*=\s*max\[[\s\S]{0,80}?\]\s*=\s*([\d,\.]+)\s*N/i,
+                    /Uplift due to 1\.5\*Design Pressure[\s\S]{0,100}?=\s*([\d,\.]+)\s*N/i
+                ]);
+
+                document.getElementById('parse-status').className = 'status-success';
+                document.getElementById('parse-status').innerText = "추출 완료 (재계산됨)";
+                runCalculations(); 
+            } catch (err) {
+                document.getElementById('parse-status').className = 'status-wait';
+                document.getElementById('parse-status').innerText = "업로드 에러: 수동으로 입력하세요.";
+                alert('PDF 파싱에 실패했습니다. 파란색 박스에 직접 제원을 입력해 주세요.');
+            }
+        }
+
+        function runCalculations() {
+            const G_kgToTon = 1000;
+            const G_nToTon = 9806.65; 
+
+            const itemNo = getValStr('inp-item');
+            const tankName = getValStr('inp-name');
+            const capacity = getVal('inp-cap');
+            const tankHeight = getVal('inp-height');
+            const idVal = getVal('inp-id');
+            const tempVal = getVal('inp-temp');
+            const pressVal = getValStr('inp-press');
+            const anchorQty = getVal('inp-aqty');
+            const anchorDia = getVal('inp-adia');
+            const bcd = getVal('inp-bcd'); 
+            
+            const h_chair = getVal('inp-hchair');
+            const t_plate = getVal('inp-tplate');
+            const projection = getVal('inp-proj');
+            const mu = getVal('inp-mu');
+
+            const anchorType = document.getElementById('inp-anchor-type').value;
+            const concCond = document.getElementById('inp-conc-cond').value;
+
+            const weKg = getVal('inp-we-kg');
+            const wtKg = getVal('inp-wt-kg');
+            const fwN = getVal('inp-fw-n');
+            const mwNm = getVal('inp-mw-nm');
+            const feN = getVal('inp-fe-n');
+            const meRw = getVal('inp-me-rw');
+            const meS = getVal('inp-me-s');
+
+            const fdnType = document.getElementById('inp-fdn').value;
+            const eqMoment = (fdnType === 'slab') ? meS : meRw;
+            
+            if (fdnType === 'slab') {
+                document.getElementById('th-me').style.backgroundColor = '#e3f2fd';
+                document.getElementById('td-me').style.backgroundColor = '#e3f2fd';
+                document.getElementById('sum-me').style.backgroundColor = '#e3f2fd';
+                document.getElementById('th-mp').style.backgroundColor = '#f8f9fa';
+                document.getElementById('td-mp').style.backgroundColor = 'transparent';
+                document.getElementById('sum-mp').style.backgroundColor = 'transparent';
+            } else {
+                document.getElementById('th-me').style.backgroundColor = '#f8f9fa';
+                document.getElementById('td-me').style.backgroundColor = 'transparent';
+                document.getElementById('sum-me').style.backgroundColor = 'transparent';
+                document.getElementById('th-mp').style.backgroundColor = '#e3f2fd';
+                document.getElementById('td-mp').style.backgroundColor = '#e3f2fd';
+                document.getElementById('sum-mp').style.backgroundColor = '#e3f2fd';
+            }
+
+            let calcEqBtm = 0;
+            if(idVal > 0) {
+                calcEqBtm = (32 * eqMoment) / (Math.PI * Math.pow(idVal, 3));
+            }
+            setValue('inp-eb', calcEqBtm.toFixed(2));
+
+            const deadBtm = getVal('inp-db'), internalBtm = getVal('inp-ib'), liquidBtm = getVal('inp-lb'), testBtm = getVal('inp-tb'), eqBtm = calcEqBtm; 
+            const deadShell = getVal('inp-ds'), liveShell = getVal('inp-ls'), windShellMax = getVal('inp-ws'), eqShell = getVal('inp-es');
+            const tbOp = getVal('inp-t-op'), tbOpWind = getVal('inp-t-opw'), tbTest = getVal('inp-t-test'), tbEq = getVal('inp-t-eq'), upliftF82 = getVal('inp-t-f82');
+
+            // Summary 표 매핑 (값이 0이면 '-' 표기)
+            document.getElementById('sum-we').innerText = (weKg > 0) ? (weKg / G_kgToTon).toFixed(2) : '-';
+            document.getElementById('sum-wt').innerText = (wtKg > 0) ? (wtKg / G_kgToTon).toFixed(2) : '-';
+            document.getElementById('sum-fw').innerText = (fwN > 0) ? (fwN / G_nToTon).toFixed(2) : '-';
+            document.getElementById('sum-mw').innerText = (mwNm > 0) ? (mwNm / G_nToTon).toFixed(2) : '-';
+            document.getElementById('sum-fe').innerText = (feN > 0) ? (feN / G_nToTon).toFixed(2) : '-';
+            document.getElementById('sum-me').innerText = (meS > 0) ? (meS / G_nToTon).toFixed(2) : '-';
+            document.getElementById('sum-mp').innerText = (meRw > 0) ? (meRw / G_nToTon).toFixed(2) : '-';
+            document.getElementById('sum-mpb').innerText = (meS > 0 && meRw > 0) ? ((meS - meRw) / G_nToTon).toFixed(2) : '-';
+            document.getElementById('sum-t').innerText = (eqShell > 0) ? (eqShell / G_nToTon).toFixed(2) : '-';
+
+            // 2차 파생 변수 연산
+            const windShellHalf = windShellMax * 0.25; 
+            const upliftShell = internalBtm * (idVal / 4); 
+            const tbTestWindHalf = Math.max(0, tbTest + ((Math.max(0, tbOpWind - tbOp)) * 0.25)); 
+            let tbWindOnlyMax = 0;
+            if (idVal > 0 && anchorQty > 0) {
+                const uWindTotal = (4 * mwNm / idVal) - (weKg * 9.80665); 
+                tbWindOnlyMax = Math.max(0, uWindTotal / anchorQty);
+            }
+            const tbDesignWindF82 = anchorQty > 0 ? (upliftF82 / anchorQty) : 0;
+
+            const tensionCases = [
+                { name: "Operation (Design Internal Pressure)", val: tbOp },
+                { name: "Operation + Max Wind", val: tbOpWind },
+                { name: "Test Condition", val: tbTest },
+                { name: "Earthquake (Seismic)", val: tbEq },
+                { name: "1.5x Design Pressure + Max Wind (F.8.2)", val: tbDesignWindF82 }
+            ];
+            let maxCase = tensionCases[0];
+            for (let i = 1; i < tensionCases.length; i++) {
+                if (tensionCases[i].val > maxCase.val) maxCase = tensionCases[i];
+            }
+            const maxTension = maxCase.val;
+
+            // Info Table Update
+            document.getElementById('val-item').innerText = itemNo;
+            document.getElementById('val-name').innerText = tankName;
+            document.getElementById('val-capacity').innerText = capacity > 0 ? capacity : "";
+            document.getElementById('val-press-temp').innerText = (pressVal && tempVal > 0) ? `${pressVal} mmAq / ${tempVal} \xB0C` : "";
+            document.getElementById('val-dim').innerText = (idVal > 0 && tankHeight > 0) ? `${idVal.toFixed(3)} x ${tankHeight.toFixed(3)} (H)` : "";
+            document.getElementById('val-anchor').innerText = (anchorDia > 0 && anchorQty > 0 && bcd > 0) ? `M${anchorDia} - ${anchorQty} Sets (B.C.D. ${bcd.toLocaleString()} mm)` : "";
+
+            // A~AG Mapping
+            function show(val) { return val > 0 ? val.toFixed(2) : "-"; }
+            
+            document.getElementById('val-A').innerText = show((deadBtm + liquidBtm + internalBtm) / G_nToTon);
+            document.getElementById('val-F').innerText = show((deadBtm + internalBtm) / G_nToTon);
+            document.getElementById('val-K').innerText = show((deadBtm + liquidBtm) / G_nToTon);
+            document.getElementById('val-P').innerText = show(deadBtm / G_nToTon);
+            document.getElementById('val-U').innerText = show((deadBtm + testBtm) / G_nToTon);
+            document.getElementById('val-Z').innerText = show((deadBtm + liquidBtm + internalBtm + eqBtm) / G_nToTon);
+            document.getElementById('val-AA').innerText = show((deadBtm + liquidBtm + internalBtm - eqBtm) / G_nToTon);
+            document.getElementById('val-AD').innerText = "0.00"; 
+
+            document.getElementById('val-B').innerText = show(Math.max(0, deadShell + liveShell - upliftShell) / G_nToTon);
+            document.getElementById('val-C').innerText = show(Math.max(0, deadShell + liveShell - upliftShell + windShellMax) / G_nToTon);
+            document.getElementById('val-G').innerText = show(Math.max(0, deadShell + liveShell - upliftShell) / G_nToTon);
+            document.getElementById('val-H').innerText = show(Math.max(0, deadShell + liveShell - upliftShell + windShellMax) / G_nToTon);
+            document.getElementById('val-L').innerText = show((deadShell + liveShell) / G_nToTon);
+            document.getElementById('val-M').innerText = show((deadShell + liveShell + windShellMax) / G_nToTon);
+            document.getElementById('val-Q').innerText = show((deadShell + liveShell) / G_nToTon);
+            document.getElementById('val-R').innerText = show((deadShell + liveShell + windShellMax) / G_nToTon);
+            document.getElementById('val-V').innerText = show(deadShell / G_nToTon);
+            document.getElementById('val-W').innerText = show((deadShell + windShellHalf) / G_nToTon);
+            document.getElementById('val-AB').innerText = show((deadShell + liveShell + eqShell) / G_nToTon);
+            document.getElementById('val-AE').innerText = "0.00"; 
+
+            document.getElementById('val-D').innerText = show(Math.max(0, tbOp) / G_nToTon);
+            document.getElementById('val-E').innerText = show(Math.max(0, tbOpWind) / G_nToTon);
+            document.getElementById('val-I').innerText = show(Math.max(0, tbOp) / G_nToTon);
+            document.getElementById('val-J').innerText = show(Math.max(0, tbOpWind) / G_nToTon);
+            document.getElementById('val-N').innerText = "0.00"; 
+            document.getElementById('val-O').innerText = show(tbWindOnlyMax / G_nToTon);
+            document.getElementById('val-S').innerText = "0.00"; 
+            document.getElementById('val-T').innerText = show(tbWindOnlyMax / G_nToTon);
+            document.getElementById('val-X').innerText = show(Math.max(0, tbTest) / G_nToTon);
+            document.getElementById('val-Y').innerText = show(Math.max(0, tbTestWindHalf) / G_nToTon);
+            document.getElementById('val-AC').innerText = show(Math.max(0, tbEq) / G_nToTon);
+            document.getElementById('val-AF').innerText = "0.00"; 
+            document.getElementById('val-AG').innerText = show(Math.max(0, tbDesignWindF82) / G_nToTon);
+
+            // 상단 헤더 텍스트 압력 반영
+            document.getElementById('val-p-op1').innerText = (internalBtm * 0.10197).toFixed(0); 
+            document.getElementById('val-p-op2').innerText = (internalBtm * 0.10197).toFixed(0);
+            document.getElementById('val-p-eq').innerText = (internalBtm * 0.10197).toFixed(0);
+
+            let kc = 11.9;
+            let concText = "";
+            if (anchorType === 'cast-in') {
+                kc = (concCond === 'uncracked') ? 11.9 : 10.0;
+                concText = (concCond === 'uncracked') ? "Uncracked (선설치 / 비균열)" : "Cracked (선설치 / 균열)";
+            } else {
+                kc = (concCond === 'uncracked') ? 10.0 : 7.0;
+                concText = (concCond === 'uncracked') ? "Uncracked (후설치 / 비균열)" : "Cracked (후설치 / 균열)";
+            }
+
+            const fck = 24, phi = 0.75; 
+            const hef1 = Math.pow((maxTension) / (phi * kc * Math.sqrt(fck)), 2/3);
+            const hef2 = 12 * anchorDia; 
+            const hef_req = Math.max(hef1, hef2);
+            const rawLength = hef_req + h_chair + t_plate + projection;
+            const finalLength = Math.ceil(rawLength / 10) * 10; 
+
+            document.getElementById('calc-conc-text').innerText = concText;
+            document.getElementById('calc-kc').innerText = kc.toFixed(1);
+
+            document.getElementById('calc-hchair').innerText = h_chair > 0 ? h_chair : "";
+            document.getElementById('calc-tplate').innerText = t_plate > 0 ? t_plate : "";
+            document.getElementById('calc-proj').innerText = projection > 0 ? projection : "";
+            document.getElementById('calc-tu').innerText = maxTension > 0 ? maxTension.toFixed(1) : "";
+            document.getElementById('calc-tu-gov').innerText = maxTension > 0 ? maxCase.name : ""; 
+            document.getElementById('calc-tu-val').innerText = maxTension > 0 ? maxTension.toFixed(1) : "";
+            document.getElementById('calc-d').innerText = anchorDia > 0 ? anchorDia : "";
+            document.getElementById('calc-d-min').innerText = anchorDia > 0 ? anchorDia : "";
+            document.getElementById('calc-hef1').innerText = maxTension > 0 ? hef1.toFixed(1) : "";
+            document.getElementById('calc-hef2').innerText = anchorDia > 0 ? hef2 : "";
+            document.getElementById('calc-hefreq').innerText = maxTension > 0 ? Math.ceil(hef_req) : "";
+            document.getElementById('calc-l-raw').innerText = maxTension > 0 ? rawLength.toFixed(1) : "";
+            document.getElementById('calc-l-final').innerText = maxTension > 0 ? finalLength : "";
+
+            // Base Shear & Friction Check
+            const wt_N = wtKg * 9.80665; 
+            const totalUplift = maxTension * anchorQty;
+            const f_fric = Math.max(0, mu * (wt_N - totalUplift));
+            const v_max = Math.max(fwN, feN);
+
+            document.getElementById('calc-mu').innerText = mu > 0 ? mu.toFixed(2) : "0.00";
+            document.getElementById('calc-wt-n').innerText = !isNaN(wt_N) && wt_N > 0 ? wt_N.toLocaleString(undefined, {maximumFractionDigits: 1}) : "-";
+            document.getElementById('calc-u-tot').innerText = !isNaN(totalUplift) && totalUplift > 0 ? totalUplift.toLocaleString(undefined, {maximumFractionDigits: 1}) : "-";
+            document.getElementById('calc-fric').innerText = !isNaN(f_fric) && f_fric >= 0 ? f_fric.toLocaleString(undefined, {maximumFractionDigits: 1}) : "-";
+            document.getElementById('calc-vmax').innerText = !isNaN(v_max) && v_max > 0 ? v_max.toLocaleString(undefined, {maximumFractionDigits: 1}) : "-";
+
+            const shearResEl = document.getElementById('calc-shear-res');
+            const shearBox = document.getElementById('shear-calc-box');
+
+            if (v_max > 0) {
+                if (f_fric >= v_max) {
+                    shearResEl.innerHTML = "<span style='color:#2e7d32;'>F<sub>fric</sub> &ge; V<sub>max</sub> &rarr; Safe (Anchor shear design NOT required)</span>";
+                    if(shearBox) shearBox.style.display = "none";
+                } else {
+                    shearResEl.innerHTML = "<span style='color:#d32f2f;'>F<sub>fric</sub> &lt; V<sub>max</sub> &rarr; Anchor Shear Design REQUIRED</span>";
+                    if(shearBox) {
+                        shearBox.style.display = "block";
+                        
+                        // Bolt Shear Check Logic
+                        let vu_bolt = anchorQty > 0 ? (v_max / anchorQty) : 0;
+                        let ase = 0.78 * Math.PI * Math.pow(anchorDia > 0 ? anchorDia : 0, 2) / 4;
+                        let futa = 517; // 517 MPa (for F1554 Gr.55)
+                        let vsa = 0.6 * ase * futa;
+                        let phi_vsa = 0.65 * vsa; // phi = 0.65 for shear
+
+                        document.getElementById('calc-vu-bolt').innerText = vu_bolt.toLocaleString(undefined, {maximumFractionDigits: 1});
+                        document.getElementById('calc-ase').innerText = ase.toLocaleString(undefined, {maximumFractionDigits: 1});
+                        document.getElementById('calc-phivsa').innerText = phi_vsa.toLocaleString(undefined, {maximumFractionDigits: 1});
+
+                        const boltShearRes = document.getElementById('calc-bolt-shear-res');
+                        if (phi_vsa >= vu_bolt && vu_bolt > 0) {
+                            boltShearRes.innerHTML = "<span style='color:#2e7d32;'>&phi;V<sub>sa</sub> &ge; V<sub>u,bolt</sub> &rarr; SAFE (Bolt steel can resist shear)</span>";
+                        } else {
+                            boltShearRes.innerHTML = "<span style='color:#d32f2f;'>&phi;V<sub>sa</sub> &lt; V<sub>u,bolt</sub> &rarr; UNSAFE (Increase bolt size or add Shear Key)</span>";
+                        }
+                    }
+                }
+            } else {
+                shearResEl.innerHTML = "-";
+                if(shearBox) shearBox.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>

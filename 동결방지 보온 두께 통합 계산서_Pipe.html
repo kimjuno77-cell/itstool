@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>동결방지 보온 두께 통합 계산서 (IEEE vs KS F 2803)</title>
+    <style>
+        :root { --primary: #2c3e50; --secondary: #34495e; --accent: #2980b9; --bg: #f4f7f6; --border: #bdc3c7; --ks: #27ae60; --ieee: #8e44ad; }
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: var(--bg); color: #333; margin: 0; padding: 20px; display: flex; gap: 20px; align-items: flex-start; }
+        
+        /* Input Panel (Left) */
+        .control-panel { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 350px; flex-shrink: 0; }
+        .control-panel h3 { margin-top: 0; color: var(--primary); border-bottom: 2px solid var(--accent); padding-bottom: 10px; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: var(--secondary); }
+        select, input { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px; box-sizing: border-box; font-size: 14px; }
+        .radio-group { display: flex; gap: 10px; margin-bottom: 10px; }
+        .btn-print { width: 100%; padding: 12px; background-color: var(--primary); color: white; border: none; border-radius: 4px; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .btn-print:hover { background-color: var(--secondary); }
+
+        /* Report Panel (Right) */
+        .report-panel { background: white; padding: 40px; border-radius: 2px; box-shadow: 0 2px 10px rgba(0,0,0,0.15); flex-grow: 1; max-width: 900px; min-height: 800px; border: 1px solid #ddd; }
+        .report-header { text-align: center; border-bottom: 3px double #333; padding-bottom: 15px; margin-bottom: 25px; }
+        .report-header h1 { margin: 0; font-size: 24px; color: #000; }
+        .report-header p { margin: 5px 0 0; color: #555; }
+        
+        .section-title { font-size: 16px; font-weight: bold; color: var(--primary); background-color: #eee; padding: 8px 12px; margin: 25px 0 15px; border-left: 4px solid var(--accent); }
+        
+        .data-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px; }
+        .data-table th, .data-table td { border: 1px solid #aaa; padding: 8px 12px; text-align: left; }
+        .data-table th { background-color: #f9f9f9; width: 35%; }
+
+        .formula-box { background-color: #fdfefe; border: 1px dashed #aaa; padding: 15px; border-radius: 4px; font-size: 15px; line-height: 1.6; margin-bottom: 15px; }
+        .step-box { font-family: monospace; font-size: 13px; background: #f8f9f9; padding: 15px; border-left: 3px solid #ccc; line-height: 1.8; }
+        
+        .comparison-container { display: flex; gap: 20px; margin-top: 20px; }
+        .comp-card { flex: 1; padding: 20px; border-radius: 4px; text-align: center; border: 1px solid #ccc; }
+        .card-ieee { background-color: #f9ebf9; border-color: var(--ieee); }
+        .card-ks { background-color: #eafaf1; border-color: var(--ks); }
+        .comp-card h4 { margin: 0 0 10px 0; color: #333; }
+        .comp-card .theory { font-size: 14px; color: #555; margin-bottom: 10px; }
+        .comp-card .design { font-size: 22px; font-weight: bold; color: #c0392b; }
+        
+        .warning { background-color: #fdedec; color: #c0392b; border: 1px solid #e74c3c; padding: 10px; font-weight: bold; margin-top: 15px; display: none; text-align:center;}
+
+        @media print {
+            body { background: none; padding: 0; display: block; }
+            .control-panel { display: none; }
+            .report-panel { box-shadow: none; border: none; padding: 0; max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="control-panel">
+        <h3>설계 조건 입력 (Inputs)</h3>
+        
+        <div class="form-group">
+            <label>1. 방한 방식 (AF Mode)</label>
+            <div class="radio-group">
+                <label><input type="radio" name="mode" value="active" checked onchange="updateUI()"> 전기보온 (Active)</label>
+                <label><input type="radio" name="mode" value="passive" onchange="updateUI()"> 수동보온 (Passive)</label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>2. 대상 유체 (Fluid)</label>
+            <select id="fluid" onchange="calculate()">
+                <option value="9">9% 암모니아수 (Ammonia 9%)</option>
+                <option value="25">25% 암모니아수 (Ammonia 25%)</option>
+                <option value="water">물 (Industrial Water)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>3. 보온재 재질 (Insulation)</label>
+            <select id="material" onchange="calculate()">
+                <option value="0.035">Rock Wool (k=0.035 W/m·K)</option>
+                <option value="0.038">E-Glass Fiber (k=0.038 W/m·K)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>4. 배관 재질 (Pipe Material)</label>
+            <select id="pipeMat" onchange="updateAlpha()">
+                <option value="11.6">Carbon Steel (탄소강/도장마감)</option>
+                <option value="8.0">Stainless Steel (STS/광택마감)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>5. 배관 규격 (Pipe Size)</label>
+            <select id="pipeSize" onchange="calculate()">
+                <option value="21.3|15.8">DN 15 (OD: 21.3 mm)</option>
+                <option value="26.7|21.0">DN 20 (OD: 26.7 mm)</option>
+                <option value="33.4|26.6">DN 25 (OD: 33.4 mm)</option>
+                <option value="48.3|40.9">DN 40 (OD: 48.3 mm)</option>
+                <option value="60.3|52.5" selected>DN 50 (OD: 60.3 mm)</option>
+                <option value="88.9|77.9">DN 80 (OD: 88.9 mm)</option>
+                <option value="114.3|102.3">DN 100 (OD: 114.3 mm)</option>
+                <option value="168.3|154.1">DN 150 (OD: 168.3 mm)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>6. 외기 온도 (Ambient Temp, ℃)</label>
+            <input type="number" id="ta" value="-20" oninput="calculate()">
+        </div>
+
+        <div class="form-group">
+            <label title="재질 선택 시 자동 입력. (임의 수정 가능)">7. 표면 열전달률 (α) [W/m²·K]</label>
+            <input type="number" id="alpha" value="11.6" oninput="calculate()">
+        </div>
+
+        <div class="form-group" id="grp-tm">
+            <label id="lbl-tm">8. 목표 온도 (Target Temp, ℃)</label>
+            <input type="number" id="tm" value="5" oninput="calculate()">
+        </div>
+
+        <div class="form-group" id="grp-ti" style="display:none;">
+            <label>9. 초기 유체 온도 (Initial Temp, ℃)</label>
+            <input type="number" id="ti" value="5" oninput="calculate()">
+        </div>
+        <div class="form-group" id="grp-time" style="display:none;">
+            <label>10. 허용 정지 시간 (Down Time, 시간)</label>
+            <input type="number" id="time" value="5" oninput="calculate()">
+        </div>
+
+        <div class="form-group" id="grp-cable">
+            <label>9. 히팅케이블 발열량 (Cable Heat, W/m)</label>
+            <input type="number" id="cable" value="15" oninput="calculate()">
+        </div>
+
+        <button class="btn-print" onclick="window.print()">보고서 인쇄 (Print PDF)</button>
+    </div>
+
+    <div class="report-panel" id="report">
+        <div class="report-header">
+            <h1>동결방지 보온 두께 통합 계산서</h1>
+            <p>Anti-Freezing Insulation Calculation (IEEE 515 vs KS F 2803)</p>
+        </div>
+
+        <div class="section-title">1. 설계 입력 조건 (Design Parameters)</div>
+        <table class="data-table">
+            <tbody id="tbl-params"></tbody>
+        </table>
+
+        <div class="section-title">2. 규격별 적용 수식 (Applied Formulas)</div>
+        <div class="formula-box" id="sec-formulas"></div>
+
+        <div class="section-title">3. 계산 과정 (Step-by-Step Calculation)</div>
+        <div class="step-box" id="sec-steps"></div>
+
+        <div class="section-title">4. 규격별 최종 두께 결론 (Conclusion)</div>
+        <div class="comparison-container">
+            <div class="comp-card card-ieee">
+                <h4 style="color: var(--ieee);">[국제 규격] IEEE 515 간이식</h4>
+                <div style="font-size:12px; color:#777; margin-bottom:10px;">(표면 열저항 무시 / 보수적 설계)</div>
+                <div class="theory" id="res-ieee-theory">이론 두께: 0.00 mm</div>
+                <div class="design" id="res-ieee-design">설계 두께: 0 mm</div>
+            </div>
+            <div class="comp-card card-ks">
+                <h4 style="color: var(--ks);">[한국 규격] KS F 2803 정밀식</h4>
+                <div style="font-size:12px; color:#777; margin-bottom:10px;">(표면 방열저항 반영 / 경제적 설계)</div>
+                <div class="theory" id="res-ks-theory">이론 두께: 0.00 mm</div>
+                <div class="design" id="res-ks-design">설계 두께: 0 mm</div>
+            </div>
+        </div>
+        <div class="warning" id="res-warning">경고: 수동 보온만으로는 두께가 100mm를 초과하여 비현실적입니다. 전기보온(Heat Tracing) 적용이 필수적입니다.</div>
+    </div>
+
+<script>
+    const fluidProps = {
+        "9": { name: "9% 암모니아수 (Aqueous Ammonia)", rho: 960, cp: 4200 },
+        "25": { name: "25% 암모니아수 (Aqueous Ammonia)", rho: 910, cp: 4400 },
+        "water": { name: "물 (Industrial Water)", rho: 1000, cp: 4184 }
+    };
+
+    function updateAlpha() {
+        const alphaVal = document.getElementById('pipeMat').value;
+        document.getElementById('alpha').value = alphaVal;
+        calculate();
+    }
+
+    function updateUI() {
+        const isPassive = document.querySelector('input[name="mode"]:checked').value === 'passive';
+        document.getElementById('grp-cable').style.display = isPassive ? 'none' : 'block';
+        document.getElementById('grp-ti').style.display = isPassive ? 'block' : 'none';
+        document.getElementById('grp-time').style.display = isPassive ? 'block' : 'none';
+        
+        const lblTm = document.getElementById('lbl-tm');
+        if(isPassive) {
+            lblTm.innerHTML = "8. 목표 동결 온도 (Target Freeze Point, ℃)";
+            document.getElementById('tm').value = "0"; 
+        } else {
+            lblTm.innerHTML = "8. 목표 유지 온도 (Target Temp, ℃)";
+            document.getElementById('tm').value = "5"; 
+        }
+        calculate();
+    }
+
+    // 수치해석: KS F 2803 표면 열저항 포함 방정식의 해(Do)를 이분법(Binary Search)으로 도출
+    function solveKS_Thickness(Di_mm, k, alpha, R_target) {
+        let low = Di_mm;
+        let high = Di_mm + 2000; 
+        let mid = Di_mm;
+
+        for(let i=0; i<50; i++) {
+            mid = (low + high) / 2;
+            let Do_m = mid / 1000;
+            // R_total = R_insulation + R_surface
+            let R_current = Math.log(mid / Di_mm) / (2 * Math.PI * k) + 1 / (Math.PI * Do_m * alpha);
+            
+            if(R_current < R_target) {
+                low = mid; 
+            } else {
+                high = mid; 
+            }
+        }
+        return (mid - Di_mm) / 2; 
+    }
+
+    function calculate() {
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        const fluidKey = document.getElementById('fluid').value;
+        const k = parseFloat(document.getElementById('material').value);
+        const matName = document.getElementById('material').options[document.getElementById('material').selectedIndex].text;
+        
+        const pipeMatName = document.getElementById('pipeMat').options[document.getElementById('pipeMat').selectedIndex].text;
+        
+        const pipeVal = document.getElementById('pipeSize').value.split('|');
+        const dOutStr = document.getElementById('pipeSize').options[document.getElementById('pipeSize').selectedIndex].text;
+        const Do_pipe = parseFloat(pipeVal[0]); 
+        const Di_pipe = parseFloat(pipeVal[1]); 
+        
+        const Ta = parseFloat(document.getElementById('ta').value);
+        const Tm = parseFloat(document.getElementById('tm').value);
+        const alpha = parseFloat(document.getElementById('alpha').value);
+        const Ti = parseFloat(document.getElementById('ti').value);
+        const timeHrs = parseFloat(document.getElementById('time').value);
+        const Qcable = parseFloat(document.getElementById('cable').value);
+
+        const fData = fluidProps[fluidKey];
+        const rho = fData.rho;
+        const Cp = fData.cp;
+
+        let tableHTML = `
+            <tr><th>적용 방식 (Mode)</th><td>${mode === 'active' ? '전기보온 (Active Heat Tracing)' : '수동보온 (Passive AF)'}</td></tr>
+            <tr><th>대상 배관 (Pipe)</th><td>${dOutStr} (${pipeMatName})</td></tr>
+            <tr><th>내부 유체 (Fluid)</th><td>${fData.name} (밀도: ${rho} kg/m³, 비열: ${Cp} J/kg·K)</td></tr>
+            <tr><th>보온재 (Insulation)</th><td>${matName}</td></tr>
+            <tr><th>외기 / 표면전달률</th><td>외기: ${Ta} ℃ / 표면 열전달률(α): ${alpha} W/m²·K</td></tr>
+        `;
+
+        let formulasHTML = "";
+        let stepsHTML = "";
+        let thk_ieee = 0;
+        let thk_ks = 0;
+
+        if (mode === 'active') {
+            tableHTML += `
+                <tr><th>목표 유지 온도 (T_m)</th><td>${Tm} ℃</td></tr>
+                <tr><th>적용 케이블 발열량 (Q)</th><td>${Qcable} W/m</td></tr>
+            `;
+            
+            formulasHTML = `
+                <b>[1] IEEE 515 (간이식 - 표면저항 무시):</b><br>
+                <i>Q</i> = [ 2 * π * <i>k</i> * (<i>T<sub>m</sub></i> - <i>T<sub>a</sub></i>) ] / ln(<i>D<sub>o</sub></i> / <i>D<sub>i</sub></i>)<br><br>
+                <b style="color:var(--ks);">[2] KS F 2803 (정밀식 - 표면저항 반영):</b><br>
+                <i>Q</i> = (<i>T<sub>m</sub></i> - <i>T<sub>a</sub></i>) / [ ln(<i>D<sub>o</sub></i> / <i>D<sub>i</sub></i>) / (2 * π * <i>k</i>) + 1 / (π * <i>D<sub>o</sub></i> * <i>α</i>) ]
+            `;
+
+            const deltaT = Tm - Ta;
+            
+            // IEEE Calc
+            const exponent = (2 * Math.PI * k * deltaT) / Qcable;
+            const Do_ieee = Do_pipe * Math.exp(exponent);
+            thk_ieee = (Do_ieee - Do_pipe) / 2;
+
+            // KS Calc
+            const R_target = deltaT / Qcable;
+            thk_ks = solveKS_Thickness(Do_pipe, k, alpha, R_target);
+
+            stepsHTML = `
+                <b>[공통 변수]</b> ΔT = ${Tm} - (${Ta}) = ${deltaT} ℃<br><br>
+                <b>[IEEE 515 계산]</b><br>
+                - 지수부(Exponent) = (2 * 3.1416 * ${k} * ${deltaT}) / ${Qcable} = ${exponent.toFixed(4)}<br>
+                - 보온외경(Do) = ${Do_pipe} * exp(${exponent.toFixed(4)}) = ${Do_ieee.toFixed(2)} mm<br>
+                - 필요 두께(t) = <b>${thk_ieee.toFixed(2)} mm</b><br><br>
+                <b style="color:var(--ks);">[KS F 2803 수치해석(이분법) 추적]</b><br>
+                - 목표 총 열저항(R_target) = ${deltaT} / ${Qcable} = ${R_target.toFixed(4)} (m·K/W)<br>
+                - 수렴된 보온외경(Do) = ${(Do_pipe + thk_ks*2).toFixed(2)} mm<br>
+                - 검증: R_ins(${ (Math.log((Do_pipe + thk_ks*2)/Do_pipe)/(2*Math.PI*k)).toFixed(4) }) + R_sur(${ (1/(Math.PI*((Do_pipe+thk_ks*2)/1000)*alpha)).toFixed(4) }) = ${R_target.toFixed(4)}<br>
+                - 필요 두께(t) = <b>${thk_ks.toFixed(2)} mm</b>
+            `;
+
+        } else {
+            tableHTML += `
+                <tr><th>초기 유체 온도 (T_i)</th><td>${Ti} ℃</td></tr>
+                <tr><th>목표 동결 온도 (T_m)</th><td>${Tm} ℃</td></tr>
+                <tr><th>허용 방어 시간 (t)</th><td>${timeHrs} 시간 (${timeHrs * 3600} 초)</td></tr>
+            `;
+
+            formulasHTML = `
+                <b>[1] 허용 열손실률 (q) 도출:</b><br>
+                <i>q</i> = [ 유체질량 * 비열 * (<i>T<sub>i</sub></i> - <i>T<sub>m</sub></i>) ] / (시간 * 3600)<br><br>
+                <b>[2] IEEE 515 (표면저항 무시):</b><br>
+                <i>q</i> = [ 2 * π * <i>k</i> * (<i>T<sub>avg</sub></i> - <i>T<sub>a</sub></i>) ] / ln(<i>D<sub>o</sub></i> / <i>D<sub>i</sub></i>)<br><br>
+                <b style="color:var(--ks);">[3] KS F 2803 (표면저항 반영):</b><br>
+                <i>q</i> = (<i>T<sub>avg</sub></i> - <i>T<sub>a</sub></i>) / [ ln(<i>D<sub>o</sub></i> / <i>D<sub>i</sub></i>) / (2 * π * <i>k</i>) + 1 / (π * <i>D<sub>o</sub></i> * <i>α</i>) ]
+            `;
+
+            const Di_m = Di_pipe / 1000;
+            const area = (Math.PI / 4) * Math.pow(Di_m, 2);
+            const m = area * rho;
+            const E = m * Cp * (Ti - Tm);
+            const timeSec = timeHrs * 3600;
+            const q = E / timeSec;
+            const Tavg = (Ti + Tm) / 2;
+            const deltaT = Tavg - Ta;
+            
+            if (q <= 0) {
+                stepsHTML = "<span style='color:red;'>오류: 초기 온도가 목표 온도보다 낮거나 같아 역산 불가</span>";
+                thk_ieee = 0; thk_ks = 0;
+            } else {
+                // IEEE Calc
+                const exponent = (2 * Math.PI * k * deltaT) / q;
+                const Do_ieee = Do_pipe * Math.exp(exponent);
+                thk_ieee = (Do_ieee - Do_pipe) / 2;
+
+                // KS Calc
+                const R_target = deltaT / q;
+                thk_ks = solveKS_Thickness(Do_pipe, k, alpha, R_target);
+
+                stepsHTML = `
+                    <b>[허용 열손실 산정]</b><br>
+                    - 질량(m) = ${area.toFixed(6)} m² * ${rho} = ${m.toFixed(3)} kg/m<br>
+                    - 보유열(E) = ${m.toFixed(3)} * ${Cp} * (${Ti} - ${Tm}) = ${E.toFixed(1)} J/m<br>
+                    - 허용손실(q) = ${E.toFixed(1)} / ${timeSec} = <b>${q.toFixed(3)} W/m</b><br><br>
+                    <b>[IEEE 515 계산]</b><br>
+                    - 평균온도차(ΔT) = ${Tavg} - (${Ta}) = ${deltaT} ℃<br>
+                    - 필요 두께(t) = <b>${thk_ieee.toFixed(2)} mm</b><br><br>
+                    <b style="color:var(--ks);">[KS F 2803 수치해석 추적]</b><br>
+                    - 목표 총 열저항(R_target) = ${deltaT} / ${q.toFixed(3)} = ${R_target.toFixed(4)} (m·K/W)<br>
+                    - 필요 두께(t) = <b>${thk_ks.toFixed(2)} mm</b>
+                `;
+            }
+        }
+
+        document.getElementById('tbl-params').innerHTML = tableHTML;
+        document.getElementById('sec-formulas').innerHTML = formulasHTML;
+        document.getElementById('sec-steps').innerHTML = stepsHTML;
+
+        // 최종 두께 판정 (상용 10mm 올림, 최소 25mm 적용)
+        function getDesign(thk) {
+            if(thk <= 0) return "N/A";
+            let d = Math.ceil(thk / 10) * 10;
+            return d < 25 ? 25 : d;
+        }
+
+        document.getElementById('res-ieee-theory').innerHTML = `이론 두께: <b>${thk_ieee.toFixed(2)} mm</b>`;
+        document.getElementById('res-ieee-design').innerHTML = `설계 권장: ${getDesign(thk_ieee)} mm`;
+
+        document.getElementById('res-ks-theory').innerHTML = `이론 두께: <b>${thk_ks.toFixed(2)} mm</b>`;
+        document.getElementById('res-ks-design').innerHTML = `설계 권장: ${getDesign(thk_ks)} mm`;
+
+        // Warning Logic
+        const warningEl = document.getElementById('res-warning');
+        if (mode === 'passive' && Math.min(thk_ieee, thk_ks) > 100) {
+            warningEl.style.display = 'block';
+        } else {
+            warningEl.style.display = 'none';
+        }
+    }
+
+    window.onload = function() {
+        updateUI();
+    };
+</script>
+
+</body>
+</html>

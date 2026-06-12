@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Anchor Bolt Calc Tool v1.21</title>
+    <style>
+        :root { --primary: #2c3e50; --accent: #c0392b; --success: #27ae60; --info: #2980b9; --warning: #d35400; }
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; }
+        .container { max-width: 1050px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .header { text-align: center; border-bottom: 2px solid var(--accent); padding-bottom: 20px; margin-bottom: 30px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        .section { background: #fafafa; padding: 15px; border-radius: 8px; border: 1px solid #e1e4e8; }
+        .section h2 { font-size: 1em; color: var(--accent); margin-top: 0; border-left: 4px solid var(--accent); padding-left: 8px; }
+        
+        .ref-note { background: #e8f4f8; padding: 12px; border-radius: 8px; font-size: 0.85em; margin-bottom: 20px; border: 1px solid #b3d7e5; }
+        .ref-note table { width: 100%; border-collapse: collapse; margin-top: 8px; background: white; }
+        .ref-note th, .ref-note td { border: 1px solid #cadbe2; padding: 6px; text-align: center; }
+        .ref-note th { background: #f0f7f9; font-weight: bold; }
+        .edge-warning { color: var(--accent); font-weight: bold; display: block; margin-top: 10px; border-top: 1px dashed #b3d7e5; padding-top: 8px; }
+
+        .input-item { margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        label { font-size: 0.85em; font-weight: 600; width: 55%; }
+        input, select { width: 40%; padding: 5px; border: 1px solid #ccc; border-radius: 4px; text-align: right; }
+        .btn-box { text-align: center; margin: 30px 0; border-top: 1px dashed #ccc; padding-top: 20px; }
+        button { padding: 12px 30px; background: var(--accent); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1em; font-weight: bold; margin: 5px; }
+        
+        #report { display: none; margin-top: 20px; padding: 40px; border: 1px solid #333; background: #fff; line-height: 1.6; }
+        .report-title { text-align: center; font-size: 22px; font-weight: bold; text-decoration: underline; margin-bottom: 30px; }
+        .calc-table { width: 100%; border-collapse: collapse; margin-bottom: 25px; table-layout: fixed; }
+        .calc-table th, .calc-table td { border: 1px solid #333; padding: 12px; font-size: 0.9em; vertical-align: middle; }
+        .calc-table th { background: #f2f2f2; width: 28%; text-align: left; }
+        .formula { background: #fdfdfd; padding: 8px; border-radius: 4px; border: 1px solid #eee; margin: 4px 0; font-family: 'Courier New', Courier, monospace; color: #444; }
+        .result-highlight { font-weight: bold; color: var(--accent); font-size: 1.1em; margin-top: 8px; }
+        .gov-highlight { background-color: #fef9e7; border-left: 4px solid #f39c12; padding: 8px; font-weight: bold; margin-top: 10px; }
+        .purchase-box { border: 2px solid var(--success); padding: 15px; background: #f0fff4; margin-top: 10px; }
+        
+        @media print { .grid, .btn-box, .print-no, .ref-note { display: none !important; } #report { display: block !important; border: none; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header print-no">
+        <h1>Anchor Bolt Calculation Tool</h1>
+        <p>KDS 41 12 00 / 41 17 00 / 14 20 54 / 14 31 00 연동 자동화</p>
+    </div>
+
+    <div class="ref-note print-no">
+        <strong>[고강도 확장형 앵커 φVn 참고값 (ETA 인증 기준)]</strong>
+        <table>
+            <tr><th>Size (호칭)</th><td>M10</td><td>M12</td><td>M16</td><td>M20</td><td>M24</td></tr>
+            <tr><th>Standard (kN)</th><td>12 ~ 14</td><td>18 ~ 20</td><td>35 ~ 40</td><td>55 ~ 60</td><td>80 ~ 85</td></tr>
+        </table>
+        <span class="edge-warning">※ 주의: 콘크리트 모서리(Edge) 인접 설치 시 강도가 급감하므로 15kN 이하 적용 권장</span>
+    </div>
+    
+    <div class="grid print-no">
+        <div class="section">
+            <h2>1. 설계 외력 (Seismic & Wind)</h2>
+            <div class="input-item"><label>장비 운전 중량 (Wp, kN)</label><input type="number" id="Wp" value="10.0"></div>
+            <div class="input-item"><label>설계가속도 (Sds)</label><input type="number" id="Sds" value="0.45" step="0.01"></div>
+            <div class="input-item"><label>중요도 계수 (Ip)</label><select id="Ip"><option value="1.0">1.0</option><option value="1.5" selected>1.5</option></select></div>
+            <div class="input-item"><label>지진 증폭계수 (ap)</label><input type="number" id="ap" value="2.5" step="0.1"></div>
+            <div class="input-item"><label>반응수정계수 (Rp)</label><input type="number" id="Rp" value="2.5" step="0.1"></div>
+            <hr style="border: 0; border-top: 1px dashed #ccc; margin: 15px 0;">
+            <div class="input-item"><label>설계풍압 (p, kN/m²)</label><input type="number" id="wind_p" value="1.5" step="0.1"></div>
+            <div class="input-item"><label>풍투영면적 (A, m²)</label><input type="number" id="wind_a" value="2.0" step="0.1"></div>
+        </div>
+
+        <div class="section">
+            <h2>2. 앵커 및 장비 제원 (자동 계산 연동)</h2>
+            <div class="input-item">
+                <label>앵커 규격 (Size)</label>
+                <select id="bolt_size">
+                    <option value="58.0" data-d="10">M10</option>
+                    <option value="84.3" data-d="12">M12</option>
+                    <option value="157.0" data-d="16" selected>M16</option>
+                    <option value="245.0" data-d="20">M20</option>
+                    <option value="353.0" data-d="24">M24</option>
+                </select>
+            </div>
+            
+            <div class="input-item">
+                <label>앵커 설치 방식 (kc)</label>
+                <select id="kc_type">
+                    <option value="10">선설치 (kc=10)</option>
+                    <option value="7" selected>후설치 (kc=7)</option>
+                </select>
+            </div>
+
+            <div class="input-item"><label>설계 전단강도입력 (φVn, kN)</label><input type="number" id="phiVn" value="30.0"></div>
+            <div class="input-item"><label>유효묻힘깊이 (hef, mm)</label><input type="number" id="hef" value="100"></div>
+            <div class="input-item"><label>앵커 수량 (N, ea)</label><input type="number" id="n_anchor" value="4"></div>
+            <div class="input-item"><label>콘크리트 강도 (fck, MPa)</label><input type="number" id="fck" value="24"></div>
+            
+            <hr style="border: 0; border-top: 1px dashed #ccc; margin: 15px 0;">
+            <h3 style="font-size:0.9em; color:#555; margin:0 0 10px 0;">[장비 Size 및 Base Plate (자동계산용)]</h3>
+            
+            <div class="input-item"><label style="color:var(--warning)">장비 본체 폭 (W_eq, mm)</label><input type="number" id="Weq" value="1000" title="장비 프레임의 실제 폭"></div>
+            <div class="input-item"><label style="color:var(--warning)">앵커 볼트 간격 (W_anchor, mm)</label><input type="number" id="W_anchor" value="1100" title="좌우 앵커 중심선 간의 거리"></div>
+            <div class="input-item"><label style="color:var(--warning)">무게중심 높이 (H_cg, mm)</label><input type="number" id="Hcg" value="1200"></div>
+            
+            <div class="input-item">
+                <label style="color:var(--info)">Base Plate 재질 (Material)</label>
+                <select id="plate_mat" onchange="updateFy()">
+                    <option value="275">탄소강 (SS275) - 275 MPa</option>
+                    <option value="205">스테인리스강 (STS304) - 205 MPa</option>
+                    <option value="215">스테인리스강 (STS316) - 215 MPa</option>
+                </select>
+            </div>
+            <div class="input-item">
+                <label style="color:var(--info)">항복강도 (Fy, MPa)</label>
+                <input type="number" id="Fy" value="275" readonly style="background-color: #e9ecef;">
+            </div>
+            <div class="input-item"><label>현재 Base 두께 (t_fix, mm)</label><input type="number" id="tfix" value="20"></div>
+            <div class="input-item"><label>유효 폭 (b, mm)</label><input type="number" id="eff_b" value="150" title="굽힘에 저항하는 판의 폭"></div>
+        </div>
+    </div>
+    
+    <div class="btn-box print-no">
+        <button onclick="calculate()">상세 계산서 생성</button>
+        <button style="background:var(--success)" onclick="window.print()">PDF 저장/인쇄</button>
+    </div>
+
+    <div id="report">
+        <div class="report-title">앵커볼트 및 Base Plate 구조안전성 검토서</div>
+        
+        <h3>1. 구매 사양 요약 (Summary)</h3>
+        <div class="purchase-box" id="purchase-res"></div>
+
+        <h3>2. 설계 외력 산정 (지진하중 vs 풍하중)</h3>
+        <table class="calc-table" id="res-load"></table>
+        
+        <h3>3. 전도 모멘트 및 앵커 요구 인장력 (Overturning Check)</h3>
+        <table class="calc-table" id="res-overturning"></table>
+
+        <h3>4. 콘크리트 브레이크아웃 인장강도 검토 (Tension Check)</h3>
+        <table class="calc-table" id="res-tension"></table>
+
+        <h3>5. 앵커 전단 안전성 검토 (Shear Check)</h3>
+        <table class="calc-table" id="res-check"></table>
+
+        <h3>6. Base Plate 두께 안전성 검토 (Flexural Strength)</h3>
+        <table class="calc-table" id="res-plate"></table>
+    </div>
+</div>
+
+<script>
+function updateFy() {
+    const matSelect = document.getElementById('plate_mat');
+    const fyInput = document.getElementById('Fy');
+    fyInput.value = matSelect.value;
+}
+
+function calculate() {
+    const Wp = parseFloat(document.getElementById('Wp').value);
+    const Sds = parseFloat(document.getElementById('Sds').value);
+    const Ip = parseFloat(document.getElementById('Ip').value);
+    const ap = parseFloat(document.getElementById('ap').value);
+    const Rp = parseFloat(document.getElementById('Rp').value);
+    const wind_p = parseFloat(document.getElementById('wind_p').value);
+    const wind_a = parseFloat(document.getElementById('wind_a').value);
+    
+    const boltSelect = document.getElementById('bolt_size');
+    const d = parseFloat(boltSelect.options[boltSelect.selectedIndex].getAttribute('data-d'));
+    
+    const kcSelect = document.getElementById('kc_type');
+    const kc = parseFloat(kcSelect.value);
+    const kc_text = kc === 10 ? "선설치 앵커 (kc=10)" : "후설치 앵커 (kc=7)";
+
+    const tfix = parseFloat(document.getElementById('tfix').value);
+    const hef = parseFloat(document.getElementById('hef').value);
+    const n = parseInt(document.getElementById('n_anchor').value);
+    const phiVn = parseFloat(document.getElementById('phiVn').value);
+    const fck = parseFloat(document.getElementById('fck').value);
+
+    const Fy = parseFloat(document.getElementById('Fy').value);
+    const matSelect = document.getElementById('plate_mat');
+    const matText = matSelect.options[matSelect.selectedIndex].text;
+    const eff_b = parseFloat(document.getElementById('eff_b').value);
+
+    // 자동계산 변수 수집 (수정됨)
+    const Weq = parseFloat(document.getElementById('Weq').value);
+    const W_anchor = parseFloat(document.getElementById('W_anchor').value); // Base Plate 폭 대신 앵커 간격 사용
+    const Hcg = parseFloat(document.getElementById('Hcg').value);
+
+    // [1] 지진하중
+    const Fp_calc = (0.4 * ap * Sds * Wp * Ip) / Rp; 
+    const Fp_min = 0.3 * Sds * Ip * Wp;
+    const Fp_max = 1.6 * Sds * Ip * Wp;
+    let Fp_final = Fp_calc;
+    let fp_reason = `F<sub>p,min</sub> (${Fp_min.toFixed(2)}) ≤ 계산값 (${Fp_calc.toFixed(2)}) ≤ F<sub>p,max</sub> (${Fp_max.toFixed(2)})`;
+    if (Fp_calc < Fp_min) { Fp_final = Fp_min; fp_reason = `하한치 적용 (계산값 ${Fp_calc.toFixed(2)} < 최소값 ${Fp_min.toFixed(2)})`; }
+    if (Fp_calc > Fp_max) { Fp_final = Fp_max; fp_reason = `상한치 적용 (계산값 ${Fp_calc.toFixed(2)} > 최대값 ${Fp_max.toFixed(2)})`; }
+
+    // [2] 풍하중 및 지배하중
+    const Fw_final = wind_p * wind_a;
+    const F_gov = Math.max(Fp_final, Fw_final);
+    const gov_text = Fp_final > Fw_final ? "지진하중(Seismic) 지배" : "풍하중(Wind) 지배";
+
+    // [3] 인장 브레이크아웃 공칭강도
+    const Nb_N = kc * 1.0 * Math.sqrt(fck) * Math.pow(hef, 1.5);
+    const Nb_kN = Nb_N / 1000;
+
+    // [4] 구매 사양
+    const L_min = hef + tfix + (2 * d);
+    const L_round = Math.ceil(L_min / 5) * 5;
+
+    // [5] 전단 검토
+    const Vu = F_gov / n;
+    const ratio_shear = Vu / phiVn;
+    const status_shear = ratio_shear <= 1.0 ? "<span style='color:green'>OK (안전)</span>" : "<span style='color:red'>N.G (불안전)</span>";
+
+    // [6] 전도 모멘트 및 인장력 자동 계산 (역학 수정됨)
+    // 모멘트 암(e): 앵커 중심부터 프레임까지의 캔틸레버 거리
+    const lever_e = Math.abs(W_anchor - Weq) / 2;
+    // 전도 모멘트 (Mot)
+    const Mot = F_gov * Hcg;
+    // 저항 모멘트 (Mres): 보수적으로 앵커 간격의 절반을 회전축으로 산정
+    const Mres = 0.9 * Wp * (W_anchor / 2);
+    // 순수 전도 모멘트 (Mnet)
+    const Mnet = Math.max(0, Mot - Mres);
+    
+    // 앵커 인장력 (Nu): W_anchor가 인장측-압축측 간의 모멘트 팔 길이라 가정
+    let Nu = 0;
+    if(Mnet > 0 && n > 0 && W_anchor > 0) {
+        Nu = Mnet / W_anchor / (n / 2);
+    }
+
+    // [7] 인장강도(Nb) 판정
+    const phi_N = 0.70; 
+    const phi_Nb_kN = phi_N * Nb_kN;
+    let ratio_tension = 0;
+    if (Nu > 0) {
+        ratio_tension = Nu / phi_Nb_kN;
+    }
+    const status_tension = (ratio_tension <= 1.0 && Nu > 0) ? "<span style='color:green'>OK (안전)</span>" : (Nu === 0 ? "<span style='color:green'>인장력 없음 (OK)</span>" : "<span style='color:red'>N.G (묻힘 깊이 증가 필요)</span>");
+
+    // [8] Plate 검토 (역학 수정됨)
+    const Mu_Nmm = (Nu * 1000) * lever_e;
+    let t_req = 0;
+    let ratio_plate = 0;
+    if(Nu > 0 && lever_e > 0) {
+        t_req = Math.sqrt((4 * Mu_Nmm) / (0.9 * Fy * eff_b));
+        ratio_plate = t_req / tfix;
+    }
+    
+    let status_plate = "";
+    if (Nu === 0 || lever_e === 0) {
+        status_plate = "<span style='color:green'>휨 발생 안함 (OK)</span>";
+    } else {
+        status_plate = ratio_plate <= 1.0 ? "<span style='color:green'>OK (판 두께 충분)</span>" : "<span style='color:red'>N.G (보강 필요)</span>";
+    }
+
+    // --- 리포트 출력 ---
+    document.getElementById('purchase-res').innerHTML = `
+        <strong>고강도 앵커 볼트 M${d} 사양</strong><br>
+        - 전체 길이(L): <strong>${L_round} mm</strong> (산출: hef ${hef} + Base 두께 ${tfix} + 여유 ${2*d} = ${L_min}mm)<br>
+        - 유효 묻힘 깊이(hef): ${hef} mm / 수량: ${n} EA<br>
+        - Base Plate 재질: ${matText}
+    `;
+
+    document.getElementById('res-load').innerHTML = `
+        <tr><th>지진하중 산정 (F<sub>p</sub>)</th><td>
+            <div class="formula">F<sub>p</sub> = (0.4 × a<sub>p</sub> × S<sub>DS</sub> × I<sub>p</sub> × W<sub>p</sub>) / R<sub>p</sub></div>
+            <div class="formula">= (0.4 × ${ap} × ${Sds} × ${Ip} × ${Wp}) / ${Rp} = ${Fp_calc.toFixed(2)} kN</div>
+            <div style="font-size:0.85em; color:#555;">[근거] ${fp_reason}</div>
+            <div class="result-highlight">➔ 적용: ${Fp_final.toFixed(2)} kN</div>
+        </td></tr>
+        <tr><th>풍하중 산정 (F<sub>w</sub>)</th><td>
+            <div class="formula">F<sub>w</sub> = p × A = ${wind_p.toFixed(2)} kN/m² × ${wind_a.toFixed(2)} m²</div>
+            <div class="result-highlight">➔ 적용: ${Fw_final.toFixed(2)} kN</div>
+        </td></tr>
+        <tr><th>지배 외력 (Max)</th><td>
+            <div class="formula">V<sub>total</sub> = Max(F<sub>p</sub>, F<sub>w</sub>)</div>
+            <div class="gov-highlight">➔ ${gov_text} : ${F_gov.toFixed(2)} kN</div>
+        </td></tr>
+    `;
+
+    document.getElementById('res-overturning').innerHTML = `
+        <tr><th>전도 모멘트 (M<sub>ot</sub>)</th><td>
+            <div class="formula">M<sub>ot</sub> = V<sub>total</sub> × H<sub>cg</sub></div>
+            <div class="formula">= ${F_gov.toFixed(2)} kN × ${Hcg} mm</div>
+            <div class="result-highlight">= ${Mot.toFixed(2)} kN·mm</div>
+        </td></tr>
+        <tr><th>저항 모멘트 (M<sub>res</sub>)</th><td>
+            <div class="formula">M<sub>res</sub> = 0.9 × W<sub>p</sub> × (W<sub>anchor</sub> / 2)</div>
+            <div class="formula">= 0.9 × ${Wp} kN × ${(W_anchor/2).toFixed(1)} mm</div>
+            <div class="result-highlight">= ${Mres.toFixed(2)} kN·mm</div>
+        </td></tr>
+        <tr><th>순 전도 모멘트 (M<sub>net</sub>)</th><td>
+            <div class="formula">M<sub>net</sub> = Max(0, M<sub>ot</sub> - M<sub>res</sub>)</div>
+            <div class="formula">= Max(0, ${Mot.toFixed(2)} - ${Mres.toFixed(2)})</div>
+            <div class="result-highlight">= ${Mnet.toFixed(2)} kN·mm</div>
+        </td></tr>
+        <tr><th>앵커 최대 인장력 (N<sub>u</sub>)</th><td>
+            <div class="formula">N<sub>u</sub> = M<sub>net</sub> / W<sub>anchor</sub> / (N / 2)</div>
+            <div class="formula">= ${Mnet.toFixed(2)} / ${W_anchor} / ${(n/2)}</div>
+            <div class="result-highlight">= ${Nu.toFixed(2)} kN</div>
+            <div style="font-size:0.85em; color:#555; margin-top:5px;">※ 인장측 앵커에 분배되는 최대 요구 하중</div>
+        </td></tr>
+    `;
+
+    document.getElementById('res-tension').innerHTML = `
+        <tr><th>법적 필수 산정식<br>(KDS 14 20 54)</th><td>
+            <div class="formula">N<sub>b</sub> = k<sub>c</sub> × &lambda;<sub>a</sub> × &radic;f<sub>ck</sub> × h<sub>ef</sub><sup>1.5</sup></div>
+            <div style="font-size:0.85em; color:#555; margin-bottom:8px;">* &lambda;<sub>a</sub> (경량콘크리트 계수) = 1.0 적용 (일반 콘크리트)</div>
+            <div class="formula">= ${kc} × 1.0 × &radic;${fck} × ${hef}<sup>1.5</sup></div>
+            <div class="result-highlight">= ${Nb_N.toFixed(0)} N ➔ 공칭강도(N<sub>b</sub>) = ${Nb_kN.toFixed(2)} kN</div>
+            <div style="font-size:0.85em; color:#555; margin-top:5px;">※ ${kc_text} 적용</div>
+        </td></tr>
+        <tr><th>안전성 판정<br>(N<sub>u</sub> vs φN<sub>b</sub>)</th><td>
+            <div class="formula">설계 인장강도 (φN<sub>b</sub>) = 0.70 × ${Nb_kN.toFixed(2)} = ${phi_Nb_kN.toFixed(2)} kN</div>
+            <div class="formula">Ratio = N<sub>u</sub> / φN<sub>b</sub> = ${Nu.toFixed(2)} / ${phi_Nb_kN.toFixed(2)} = ${ratio_tension.toFixed(3)}</div>
+            <div class="result-highlight" style="font-size:1.2em;">판정: ${status_tension}</div>
+            <div style="font-size:0.85em; color:#555; margin-top:5px;">※ φ=0.70 적용 (콘크리트 파괴 모드), 단일 앵커 기준 (그룹/모서리 효과 미고려)</div>
+        </td></tr>
+    `;
+
+    document.getElementById('res-check').innerHTML = `
+        <tr><th>요구 전단력 (V<sub>u</sub>)</th><td>
+            <div class="formula">V<sub>u</sub> = V<sub>total</sub> / N</div>
+            <div class="formula">= ${F_gov.toFixed(2)} / ${n}</div>
+            <div class="result-highlight">= ${Vu.toFixed(2)} kN</div>
+        </td></tr>
+        <tr><th>설계 전단강도 (φV<sub>n</sub>)</th><td>
+            <div class="result-highlight">${phiVn.toFixed(2)} kN</div>
+            <div style="font-size:0.85em; color:#555; margin-top:5px;">※ 강재파괴, 콘크리트 브레이크아웃 파괴, 프라이아웃 파괴 강도 중 최소값 적용 (KDS 14 20 54 기준)</div>
+        </td></tr>
+        <tr><th>안전성 판정</th><td>
+            <div class="formula">Ratio = V<sub>u</sub> / φV<sub>n</sub></div>
+            <div class="formula">= ${Vu.toFixed(2)} / ${phiVn.toFixed(2)} = ${ratio_shear.toFixed(3)}</div>
+            <div class="result-highlight" style="font-size:1.2em;">판정: ${status_shear}</div>
+        </td></tr>
+    `;
+
+    document.getElementById('res-plate').innerHTML = `
+        <tr><th>모멘트 암 (e) 자동산정</th><td>
+            <div class="formula">e = | W<sub>anchor</sub> - W<sub>eq</sub> | / 2</div>
+            <div class="formula">= | ${W_anchor} - ${Weq} | / 2</div>
+            <div class="result-highlight">= ${lever_e.toFixed(1)} mm</div>
+            <div style="font-size:0.85em; color:#555; margin-top:5px;">※ 앵커 중심선에서 프레임 부착면까지의 캔틸레버 거리 (거리가 0일 경우 휨 발생 안함)</div>
+        </td></tr>
+        <tr><th>휨 모멘트 (M<sub>u</sub>)</th><td>
+            <div class="formula">M<sub>u</sub> = N<sub>u</sub> × e = ${Nu.toFixed(2)} kN × ${lever_e.toFixed(1)} mm</div>
+            <div class="result-highlight">= ${(Nu * lever_e).toFixed(2)} kN·mm</div>
+        </td></tr>
+        <tr><th>요구 두께 (t<sub>req</sub>)</th><td>
+            <div class="formula">t<sub>req</sub> = &radic;[ (4 × M<sub>u</sub>) / (φ × F<sub>y</sub> × b) ]</div>
+            <div class="formula">= &radic;[ (4 × ${Mu_Nmm.toFixed(0)}) / (0.9 × ${Fy} × ${eff_b}) ]</div>
+            <div class="result-highlight">= ${t_req.toFixed(2)} mm</div>
+            <div style="font-size:0.85em; color:#555; margin-top:5px;">※ 강도감소계수 φ=0.90 적용 (강구조 휨 부재)</div>
+        </td></tr>
+        <tr><th>최종 판정</th><td>
+            <div class="formula">Ratio = t<sub>req</sub> / t<sub>fix</sub></div>
+            <div class="formula">= ${t_req.toFixed(2)} / ${tfix} = ${ratio_plate.toFixed(3)}</div>
+            <div class="result-highlight" style="font-size:1.2em;">판정: ${status_plate}</div>
+        </td></tr>
+    `;
+
+    document.getElementById('report').style.display = 'block';
+    window.scrollTo(0, document.body.scrollHeight);
+}
+</script>
+</body>
+</html>
