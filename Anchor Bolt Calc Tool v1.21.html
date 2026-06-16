@@ -298,11 +298,12 @@ function calculate() {
         <tr><th>지진하중 산정 (F<sub>p</sub>)</th><td>
             <div class="formula">F<sub>p</sub> = (0.4 × a<sub>p</sub> × S<sub>DS</sub> × I<sub>p</sub> × W<sub>p</sub>) / R<sub>p</sub></div>
             <div class="formula">= (0.4 × ${ap} × ${Sds} × ${Ip} × ${Wp}) / ${Rp} = ${Fp_calc.toFixed(2)} kN</div>
-            <div style="font-size:0.85em; color:#555;">[근거] ${fp_reason}</div>
+            <div style="font-size:0.85em; color:#555; margin-top:5px;">[근거] KDS 41 17 00 (건축물 내진설계기준) 18.2.2<br>※ ${fp_reason}</div>
             <div class="result-highlight">➔ 적용: ${Fp_final.toFixed(2)} kN</div>
         </td></tr>
         <tr><th>풍하중 산정 (F<sub>w</sub>)</th><td>
             <div class="formula">F<sub>w</sub> = p × A = ${wind_p.toFixed(2)} kN/m² × ${wind_a.toFixed(2)} m²</div>
+            <div style="font-size:0.85em; color:#555; margin-top:5px;">[근거] KDS 41 10 15 (건축구조기준 설계풍하중)</div>
             <div class="result-highlight">➔ 적용: ${Fw_final.toFixed(2)} kN</div>
         </td></tr>
         <tr><th>지배 외력 (Max)</th><td>
@@ -331,14 +332,14 @@ function calculate() {
             <div class="formula">N<sub>u</sub> = M<sub>net</sub> / W<sub>anchor</sub> / (N / 2)</div>
             <div class="formula">= ${Mnet.toFixed(2)} / ${W_anchor} / ${(n/2)}</div>
             <div class="result-highlight">= ${Nu.toFixed(2)} kN</div>
-            <div style="font-size:0.85em; color:#555; margin-top:5px;">※ 인장측 앵커에 분배되는 최대 요구 하중</div>
+            <div style="font-size:0.85em; color:#555; margin-top:5px;">[근거] 정역학(Statics) 및 KDS 41 12 00 기본원리<br>※ 인장측 앵커에 분배되는 최대 요구 하중</div>
         </td></tr>
     `;
 
     document.getElementById('res-tension').innerHTML = `
         <tr><th>법적 필수 산정식<br>(KDS 14 20 54)</th><td>
             <div class="formula">N<sub>b</sub> = k<sub>c</sub> × &lambda;<sub>a</sub> × &radic;f<sub>ck</sub> × h<sub>ef</sub><sup>1.5</sup></div>
-            <div style="font-size:0.85em; color:#555; margin-bottom:8px;">* &lambda;<sub>a</sub> (경량콘크리트 계수) = 1.0 적용 (일반 콘크리트)</div>
+            <div style="font-size:0.85em; color:#555; margin-bottom:8px;">[근거] KDS 14 20 54 (콘크리트용 앵커 설계기준) 4.3.2<br>* &lambda;<sub>a</sub> (경량콘크리트 계수) = 1.0 적용 (일반 콘크리트)</div>
             <div class="formula">= ${kc} × 1.0 × &radic;${fck} × ${hef}<sup>1.5</sup></div>
             <div class="result-highlight">= ${Nb_N.toFixed(0)} N ➔ 공칭강도(N<sub>b</sub>) = ${Nb_kN.toFixed(2)} kN</div>
             <div style="font-size:0.85em; color:#555; margin-top:5px;">※ ${kc_text} 적용</div>
@@ -359,7 +360,7 @@ function calculate() {
         </td></tr>
         <tr><th>설계 전단강도 (φV<sub>n</sub>)</th><td>
             <div class="result-highlight">${phiVn.toFixed(2)} kN</div>
-            <div style="font-size:0.85em; color:#555; margin-top:5px;">※ 강재파괴, 콘크리트 브레이크아웃 파괴, 프라이아웃 파괴 강도 중 최소값 적용 (KDS 14 20 54 기준)</div>
+            <div style="font-size:0.85em; color:#555; margin-top:5px;">[근거] KDS 14 20 54 (콘크리트용 앵커 설계기준) 4.4<br>※ 강재파괴, 콘크리트 브레이크아웃 파괴, 프라이아웃 파괴 강도 중 최소값 적용</div>
         </td></tr>
         <tr><th>안전성 판정</th><td>
             <div class="formula">Ratio = V<sub>u</sub> / φV<sub>n</sub></div>
@@ -383,7 +384,7 @@ function calculate() {
             <div class="formula">t<sub>req</sub> = &radic;[ (4 × M<sub>u</sub>) / (φ × F<sub>y</sub> × b) ]</div>
             <div class="formula">= &radic;[ (4 × ${Mu_Nmm.toFixed(0)}) / (0.9 × ${Fy} × ${eff_b}) ]</div>
             <div class="result-highlight">= ${t_req.toFixed(2)} mm</div>
-            <div style="font-size:0.85em; color:#555; margin-top:5px;">※ 강도감소계수 φ=0.90 적용 (강구조 휨 부재)</div>
+            <div style="font-size:0.85em; color:#555; margin-top:5px;">[근거] KDS 14 31 00 (강구조 설계기준) / AISC Design Guide 1<br>※ 강도감소계수 φ=0.90 적용 (강구조 휨 부재)</div>
         </td></tr>
         <tr><th>최종 판정</th><td>
             <div class="formula">Ratio = t<sub>req</sub> / t<sub>fix</sub></div>
