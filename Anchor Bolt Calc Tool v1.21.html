@@ -34,11 +34,20 @@
         .gov-highlight { background-color: #fef9e7; border-left: 4px solid #f39c12; padding: 8px; font-weight: bold; margin-top: 10px; }
         .purchase-box { border: 2px solid var(--success); padding: 15px; background: #f0fff4; margin-top: 10px; }
         
-        .print-section { page-break-inside: avoid; break-inside: avoid; }
+        .print-section { 
+            page-break-inside: avoid !important; 
+            break-inside: avoid !important; 
+            display: inline-block; 
+            width: 100%; 
+        }
+        .calc-table tr { 
+            page-break-inside: avoid !important; 
+            break-inside: avoid !important; 
+        }
         @media print { 
             .grid, .btn-box, .print-no, .ref-note { display: none !important; } 
             #report { display: block !important; border: none; padding: 0; margin: 0; } 
-            h3 { page-break-after: avoid; break-after: avoid; }
+            h3 { page-break-after: avoid !important; break-after: avoid !important; }
         }
     </style>
 </head>
