@@ -34,7 +34,12 @@
         .gov-highlight { background-color: #fef9e7; border-left: 4px solid #f39c12; padding: 8px; font-weight: bold; margin-top: 10px; }
         .purchase-box { border: 2px solid var(--success); padding: 15px; background: #f0fff4; margin-top: 10px; }
         
-        @media print { .grid, .btn-box, .print-no, .ref-note { display: none !important; } #report { display: block !important; border: none; } }
+        .print-section { page-break-inside: avoid; break-inside: avoid; }
+        @media print { 
+            .grid, .btn-box, .print-no, .ref-note { display: none !important; } 
+            #report { display: block !important; border: none; padding: 0; margin: 0; } 
+            h3 { page-break-after: avoid; break-after: avoid; }
+        }
     </style>
 </head>
 <body>
@@ -125,23 +130,35 @@
     <div id="report">
         <div class="report-title">앵커볼트 및 Base Plate 구조안전성 검토서</div>
         
-        <h3>1. 구매 사양 요약 (Summary)</h3>
-        <div class="purchase-box" id="purchase-res"></div>
+        <div class="print-section">
+            <h3>1. 구매 사양 요약 (Summary)</h3>
+            <div class="purchase-box" id="purchase-res"></div>
+        </div>
 
-        <h3>2. 설계 외력 산정 (지진하중 vs 풍하중)</h3>
-        <table class="calc-table" id="res-load"></table>
+        <div class="print-section">
+            <h3>2. 설계 외력 산정 (지진하중 vs 풍하중)</h3>
+            <table class="calc-table" id="res-load"></table>
+        </div>
         
-        <h3>3. 전도 모멘트 및 앵커 요구 인장력 (Overturning Check)</h3>
-        <table class="calc-table" id="res-overturning"></table>
+        <div class="print-section">
+            <h3>3. 전도 모멘트 및 앵커 요구 인장력 (Overturning Check)</h3>
+            <table class="calc-table" id="res-overturning"></table>
+        </div>
 
-        <h3>4. 콘크리트 브레이크아웃 인장강도 검토 (Tension Check)</h3>
-        <table class="calc-table" id="res-tension"></table>
+        <div class="print-section">
+            <h3>4. 콘크리트 브레이크아웃 인장강도 검토 (Tension Check)</h3>
+            <table class="calc-table" id="res-tension"></table>
+        </div>
 
-        <h3>5. 앵커 전단 안전성 검토 (Shear Check)</h3>
-        <table class="calc-table" id="res-check"></table>
+        <div class="print-section">
+            <h3>5. 앵커 전단 안전성 검토 (Shear Check)</h3>
+            <table class="calc-table" id="res-check"></table>
+        </div>
 
-        <h3>6. Base Plate 두께 안전성 검토 (Flexural Strength)</h3>
-        <table class="calc-table" id="res-plate"></table>
+        <div class="print-section">
+            <h3>6. Base Plate 두께 안전성 검토 (Flexural Strength)</h3>
+            <table class="calc-table" id="res-plate"></table>
+        </div>
     </div>
 </div>
 
