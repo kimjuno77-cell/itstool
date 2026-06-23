@@ -902,6 +902,11 @@
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
                     새 창으로 열기 (웹 브라우저)
                 </button>
+                <!-- PPT TOOL DOWNLOAD BTN -->
+                <a href="./PPT_Merger_Builder_v6.zip" download class="print-btn" id="ppt-download-btn" style="display: none; background: linear-gradient(135deg, var(--accent-green) 0%, #059669 100%); text-decoration: none; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25);">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    PPT 통합 툴 다운로드
+                </a>
                 <!-- GLOBAL PDF PRINT BRIDGE BUTTON -->
                 <button class="print-btn" id="global-print-btn" onclick="triggerActivePrint()" style="display: none;">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
@@ -1131,6 +1136,7 @@
             const topSubtitle = document.getElementById('top-bar-subtitle');
             const globalPrintBtn = document.getElementById(PRINT_BTN_ID);
             const globalLinkBtn = document.getElementById(LINK_BTN_ID);
+            const pptDownloadBtn = document.getElementById('ppt-download-btn');
 
             currentActiveTabName = tabName;
             currentActiveUrl = srcUrl;
@@ -1144,6 +1150,7 @@
                 topSubtitle.innerText = "Plant Engineering Integrated Calculation Dashboard";
                 globalPrintBtn.style.display = 'none'; // Hide print button in home
                 globalLinkBtn.style.display = 'none'; // Hide out-link button in home
+                if (pptDownloadBtn) pptDownloadBtn.style.display = 'none';
             } else {
                 // Hide Home, show calculator iframe
                 document.getElementById('panel-home').classList.remove('active-panel');
@@ -1163,6 +1170,15 @@
                 } else {
                     globalPrintBtn.style.display = 'flex';
                     globalLinkBtn.style.display = 'none';
+                }
+
+                // Show PPT Download Button only when tabName is 'ppt-merger'
+                if (pptDownloadBtn) {
+                    if (tabName === 'ppt-merger') {
+                        pptDownloadBtn.style.display = 'flex';
+                    } else {
+                        pptDownloadBtn.style.display = 'none';
+                    }
                 }
 
                 // Load source URL into iframe with loading control
