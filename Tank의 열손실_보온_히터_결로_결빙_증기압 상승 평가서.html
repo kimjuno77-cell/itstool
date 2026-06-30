@@ -106,6 +106,7 @@
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-1">저장 유체 (Stored Fluid)</label>
                             <select id="storedFluid" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="water">물 (WATER) (어는점: 0°C)</option>
                                 <option value="ammonia9">9% 암모니아수 (어는점: -12°C)</option>
                                 <option value="ammonia25">25% 암모니아수 (어는점: -56°C)</option>
                                 <option value="ra">황연제거제 K409-D (어는점: -55°C)</option>
@@ -440,7 +441,17 @@
             let calculateVaporPressure = function(T) { return 0; };
             let getVaporStepText = function(T) { return ""; };
 
-            if (inputs.fluid.value === 'ammonia9') {
+            if (inputs.fluid.value === 'water') {
+                FREEZING_POINT = 0;
+                fluidName = "물 (WATER)";
+                fluidDensity = 1000;
+                fluidCp = 4.18;
+                displays.initGuide.innerHTML = "💡 <b>가이드라인:</b> 동결 위험이 있으므로 동절기 보온 및 히터 적용을 권장합니다.";
+                displays.summerDesc.innerHTML = `물은 하절기 기온 상승에 따른 증기압 변화가 크지 않아 비교적 안전합니다.`;
+                vaporFormula = "P_vap(kPa) = (10^(8.07131 - 1730.63 / (T + 233.426))) / 7.50062 (NIST 화학웹북 물 Antoine 식)";
+                calculateVaporPressure = function(T) { return Math.pow(10, 8.07131 - 1730.63 / (T + 233.426)) / 7.50062; };
+                getVaporStepText = function(T) { return `(10^(8.07131 - 1730.63 / (${T.toFixed(2)} + 233.426))) / 7.50062`; };
+            } else if (inputs.fluid.value === 'ammonia9') {
                 displays.initGuide.innerHTML = "💡 <b>가이드라인:</b> 통상 외기 온도로 입고되나, 겨울철 파이프라인 동결 주의.";
                 displays.summerDesc.innerHTML = `여름철 기온이 ${T_summer}°C까지 상승 시 9% 암모니아수의 증기압이 상승하여 다량의 암모니아 가스가 방출(Out-breathing)됩니다. <b>호흡밸브(Breather Valve) 및 세정탑(Scrubber)의 용량 적합성을 재검토</b>해야 합니다. (참조: 한일MSDS암모니아수+9%_ver12_20260312)`;
                 vaporFormula = "P_vap(kPa) = exp(15.942 - 3386 / (T + 230)) (Perry's Handbook 9% 암모니아수 VLE Antoine 곡선 적합식)";
