@@ -1204,7 +1204,12 @@
             loader.classList.add('visible');
 
             // Source assigning
-            iframe.src = url;
+            if (window.location.protocol.startsWith('http')) {
+                const cacheBuster = 'v=' + new Date().getTime();
+                iframe.src = url + (url.includes('?') ? '&' : '?') + cacheBuster;
+            } else {
+                iframe.src = url;
+            }
 
             // Once loaded, hide spinner
             iframe.onload = function() {
