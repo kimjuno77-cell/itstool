@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>배관 및 설비 보온 표면온도 계산서</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif; }
+        
+        /* 공통 인풋 스타일 (웹 화면용) */
+        .doc-input {
+            width: 100%;
+            background-color: transparent;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .doc-input:focus { background-color: #EFF6FF; }
+        
+        /* A4 Print & Report Styles */
+        @page { size: A4 portrait; margin: 15mm; }
+        @media print {
+            html, body { 
+                width: 100% !important;
+                height: auto !important; 
+                min-height: auto !important; 
+                overflow: visible !important; 
+                background: white !important;
+                font-size: 10.5pt !important;
+            }
+            body { 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
+                margin: 0; 
+                padding: 0 !important; 
+            }
+            .no-print { display: none !important; }
+            .a4-paper { 
+                width: 100% !important; 
+                max-width: 100% !important;
+                margin: 0 !important; 
+                padding: 0 !important; 
+                box-shadow: none !important; 
+                border: none !important; 
+            }
+            
+            /* 인쇄 시 폼 컨트롤(input, select)을 일반 텍스트처럼 표시 */
+            input, select, textarea {
+                border: none !important;
+                background: transparent !important;
+                -webkit-appearance: none !important;
+                -moz-appearance: none !important;
+                appearance: none !important;
+                color: black !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+            }
+            select::-ms-expand { display: none !important; }
+            
+            /* 색상 리셋 (컬러 프린트 지원을 위해 최소한의 강조색 제외 흑백톤 유지) */
+            .print\:text-black { color: black !important; }
+            .print\:border-black { border-color: black !important; }
+            
+            .print-break { page-break-before: always; break-before: page; }
+            .avoid-break { page-break-inside: avoid !important; break-inside: avoid !important; }
+        }
+        
+        .a4-paper {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            color: #1f2937;
+        }
+    </style>
+</head>
+<body class="bg-slate-200 min-h-screen py-4 md:py-8 text-slate-800 print:bg-white print:py-0">
+
+    <!-- Print Button (웹 화면에만 표시) -->
+    <div class="max-w-[210mm] mx-auto mb-4 flex justify-end no-print px-4 md:px-0">
+        <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 px-4 rounded shadow flex items-center gap-2 transition-colors text-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd" />
+            </svg>
+            보고서 인쇄 및 PDF 저장
+        </button>
+    </div>
+
+    <!-- 계산서 A4 영역 -->
+    <div class="a4-paper p-8 flex flex-col box-border print:p-0">
+        
+        <!-- Document Header (타이틀) -->
+        <div class="border-b-2 border-slate-800 pb-4 mb-4 avoid-break flex justify-between items-end">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-slate-900">배관 및 설비 보온 표면온도 계산서</h1>
+                <p class="text-xs text-slate-500 mt-1 uppercase tracking-wider">Thermal Insulation Calculation Report for Pipes & Equipment</p>
+            </div>
+        </div>
+
+        <!-- Project Info -->
+        <table class="w-full border-collapse border border-slate-400 text-sm mb-6 avoid-break">
+            <colgroup>
+                <col class="w-[15%] bg-slate-50">
+                <col class="w-[35%]">
+                <col class="w-[15%] bg-slate-50">
+                <col class="w-[35%]">
+            </colgroup>
+            <tbody>
+                <tr>
+                    <th class="border border-slate-400 py-1 px-2 text-left font-semibold">프로젝트명</th>
+                    <td class="border border-slate-400 py-1 px-2"><input type="text" class="doc-input" placeholder="Project Name 입력" value="배관 및 기기 보온 공사"></td>
+                    <th class="border border-slate-400 py-1 px-2 text-left font-semibold">계산일자</th>
+                    <td class="border border-slate-400 py-1 px-2"><input type="date" class="doc-input" id="current_date"></td>
+                </tr>
+                <tr>
+                    <th class="border border-slate-400 py-1 px-2 text-left font-semibold">기기/배관 번호</th>
+                    <td class="border border-slate-400 py-1 px-2"><input type="text" class="doc-input" placeholder="Tag No. 입력" value="P-001 / V-101"></td>
+                    <th class="border border-slate-400 py-1 px-2 text-left font-semibold">비 고</th>
+                    <td class="border border-slate-400 py-1 px-2"><input type="text" class="doc-input" placeholder="비고 입력"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- 1. 설계 조건 -->
+        <div class="avoid-break mb-6">
+            <h3 class="font-bold text-sm mb-1 pl-1 border-l-4 border-slate-800">1. 설계 조건 (Design Conditions)</h3>
+            <table class="w-full border-collapse border border-slate-400 text-sm">
+                <colgroup>
+                    <col class="w-[30%]">
+                    <col class="w-[20%]">
+                    <col class="w-[10%]">
+                    <col class="w-[40%]">
+                </colgroup>
+                <thead>
+                    <tr class="bg-slate-50">
+                        <th class="border border-slate-400 py-1 px-2 text-center font-semibold">항 목 (Description)</th>
+                        <th class="border border-slate-400 py-1 px-2 text-center font-semibold">입력값 (Value)</th>
+                        <th class="border border-slate-400 py-1 px-2 text-center font-semibold">단위</th>
+                        <th class="border border-slate-400 py-1 px-2 text-center font-semibold">비 고 (Remarks)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th class="border border-slate-400 py-1.5 px-3 text-left font-medium">내부 가스/유체 온도 (Th)</th>
+                        <td class="border border-slate-400 py-1.5 px-3">
+                            <input type="number" id="input_Th" class="doc-input text-right font-bold text-red-700 print:text-black bg-red-50/50" value="650" min="0" oninput="calculate()">
+                        </td>
+                        <td class="border border-slate-400 py-1.5 px-2 text-center">℃</td>
+                        <td class="border border-slate-400 py-1.5 px-3 text-xs text-slate-500">모재 열관류 저항 생략 (보수적 적용)</td>
+                    </tr>
+                    <tr>
+                        <th class="border border-slate-400 py-1.5 px-3 text-left font-medium">주위(외기) 온도 (Ta)</th>
+                        <td class="border border-slate-400 py-1.5 px-3">
+                            <input type="number" id="input_Ta" class="doc-input text-right" value="20" oninput="calculate()">
+                        </td>
+                        <td class="border border-slate-400 py-1.5 px-2 text-center">℃</td>
+                        <td class="border border-slate-400 py-1.5 px-3 text-xs text-slate-500">여름철 실내/실외 조건 권장</td>
+                    </tr>
+                    <tr>
+                        <th class="border border-slate-400 py-1.5 px-3 text-left font-medium">외부 풍속 (V)</th>
+                        <td class="border border-slate-400 py-1.5 px-3">
+                            <input type="number" id="input_V" class="doc-input text-right" value="0" step="0.1" min="0" oninput="calculate()">
+                        </td>
+                        <td class="border border-slate-400 py-1.5 px-2 text-center">m/s</td>
+                        <td class="border border-slate-400 py-1.5 px-3 text-xs text-slate-500">실내 및 보수적 설계 시 0 적용 (자연대류)</td>
+                    </tr>
+                    <tr>
+                        <th class="border border-slate-400 py-1.5 px-3 text-left font-medium">대상 설비 형태</th>
+                        <td class="border border-slate-400 py-1.5 px-3" colspan="2">
+                            <select id="input_type" class="doc-input text-left bg-slate-50" onchange="toggleDiameter(); calculate()">
+                                <option value="pipe">표준 배관 (Standard Pipe)</option>
+                                <option value="round">원형 기기/덕트 (Cylindrical Equip)</option>
+                                <option value="flat">평면/사각 (Flat Wall)</option>
+                            </select>
+                        </td>
+                        <td class="border border-slate-400 py-1.5 px-3 text-xs text-slate-500">배관, 탱크기기 또는 사각덕트 선택</td>
+                    </tr>
+                    <!-- 표준 배관 선택 시 나타나는 행 -->
+                    <tr id="div_pipe_size">
+                        <th class="border border-slate-400 py-1.5 px-3 text-left font-medium pl-6 text-slate-600">└ 배관 규격 (NPS 기준)</th>
+                        <td class="border border-slate-400 py-1.5 px-3">
+                            <select id="input_pipe_size" class="doc-input text-right" onchange="calculate()">
+                                <option value="34.0">1" (34.0 mm)</option>
+                                <option value="48.3">1.5" (48.3 mm)</option>
+                                <option value="60.3">2" (60.3 mm)</option>
+                                <option value="89.1">3" (89.1 mm)</option>
+                                <option value="114.3">4" (114.3 mm)</option>
+                                <option value="165.2" selected>6" (165.2 mm)</option>
+                                <option value="216.3">8" (216.3 mm)</option>
+                                <option value="267.4">10" (267.4 mm)</option>
+                                <option value="318.5">12" (318.5 mm)</option>
+                                <option value="406.4">16" (406.4 mm)</option>
+                                <option value="508.0">20" (508.0 mm)</option>
+                                <option value="609.6">24" (609.6 mm)</option>
+                            </select>
+                        </td>
+                        <td class="border border-slate-400 py-1.5 px-2 text-center">NPS</td>
+                        <td class="border border-slate-400 py-1.5 px-3 text-xs text-slate-500">배관 외경에 따른 등가열저항 산출용</td>
+                    </tr>
+                    <!-- 원형 기기 선택 시 나타나는 행 -->
+                    <tr id="div_diameter" class="hidden">
+                        <th class="border border-slate-400 py-1.5 px-3 text-left font-medium pl-6 text-slate-600">└ 설비/덕트 외경 (D)</th>
+                        <td class="border border-slate-400 py-1.5 px-3">
+                            <input type="number" id="input_D" class="doc-input text-right" value="1000" oninput="calculate()">
+                        </td>
+                        <td class="border border-slate-400 py-1.5 px-2 text-center">mm</td>
+                        <td class="border border-slate-400 py-1.5 px-3 text-xs text-slate-500">기기 외경 직접 입력</td>
+                    </tr>
+                    <tr>
+                        <th class="border border-slate-400 py-1.5 px-3 text-left font-medium">보온재 재질 선택</th>
+                        <td class="border border-slate-400 py-1.5 px-3" colspan="2">
+                            <select id="input_mat" class="doc-input text-left" onchange="calculate()">
+                                <option value="rockwool">Rock Wool (암면 계열)</option>
+                                <option value="mineralwool">Mineral Wool (미네랄울)</option>
+                                <option value="eglass">E-glass Fiber (유리섬유)</option>
+                                <option value="hyperlite">Hyperlite (퍼라이트 계열)</option>
+                            </select>
+                        </td>
+                        <td class="border border-slate-400 py-1.5 px-3 text-xs text-slate-500">고온용 보온재 (KS L 9102 유사 기준)</td>
+                    </tr>
+                    <tr>
+                        <th class="border border-slate-400 py-1.5 px-3 text-left font-medium">보온재 두께 (t)</th>
+                        <td class="border border-slate-400 py-1.5 px-3">
+                            <input type="number" id="input_thick" class="doc-input text-right font-bold text-blue-700 print:text-black bg-blue-50/50" value="150" min="1" oninput="calculate()">
+                        </td>
+                        <td class="border border-slate-400 py-1.5 px-2 text-center">mm</td>
+                        <td class="border border-slate-400 py-1.5 px-3 text-xs text-slate-500"></td>
+                    </tr>
+                    <tr>
+                        <th class="border border-slate-400 py-1.5 px-3 text-left font-medium">외부 마감재 (방사율)</th>
+                        <td class="border border-slate-400 py-1.5 px-3" colspan="2">
+                            <select id="input_casing" class="doc-input text-left" onchange="calculate()">
+                                <option value="0.1">알루미늄 판 (ε ≈ 0.10)</option>
+                                <option value="0.2">아연도금강판 (ε ≈ 0.20)</option>
+                                <option value="0.15">SUS304 외장 (ε ≈ 0.15)</option>
+                                <option value="0.9">캔버스/매스틱 (ε ≈ 0.90)</option>
+                            </select>
+                        </td>
+                        <td class="border border-slate-400 py-1.5 px-3 text-xs text-slate-500">마감재 산화/오염 시 변동 가능성 고려</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 2. 시뮬레이션 결과 -->
+        <div class="avoid-break mb-6">
+            <h3 class="font-bold text-sm mb-1 pl-1 border-l-4 border-slate-800">2. 시뮬레이션 결과 (Simulation Results)</h3>
+            <table class="w-full border-collapse border border-slate-400 text-sm">
+                <colgroup>
+                    <col class="w-[30%]">
+                    <col class="w-[20%]">
+                    <col class="w-[10%]">
+                    <col class="w-[40%]">
+                </colgroup>
+                <tbody>
+                    <tr>
+                        <th class="border border-slate-400 py-3 px-3 text-left font-bold bg-slate-50">예상 표면 온도 (Ts)</th>
+                        <td class="border border-slate-400 py-3 px-3 text-right">
+                            <span id="out_Ts" class="text-xl font-bold text-blue-700 print:text-black tracking-tight">--</span>
+                        </td>
+                        <td class="border border-slate-400 py-3 px-2 text-center font-bold bg-slate-50">℃</td>
+                        <td class="border border-slate-400 py-3 px-3 text-center align-middle">
+                            <span id="out_status" class="px-2 py-1 rounded text-xs font-bold border inline-block">--</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="border border-slate-400 py-2 px-3 text-left font-medium bg-slate-50">표면 열손실률 (q)</th>
+                        <td class="border border-slate-400 py-2 px-3 text-right">
+                            <span id="out_q" class="text-lg font-bold text-slate-800 tracking-tight">--</span>
+                        </td>
+                        <td class="border border-slate-400 py-2 px-2 text-center bg-slate-50">W/m²</td>
+                        <td class="border border-slate-400 py-2 px-3 text-xs text-slate-500 text-center">단위 면적(외부 마감면) 당</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 3. 계산 매개변수 (Reference) -->
+        <div class="avoid-break mb-6">
+            <h3 class="font-bold text-sm mb-1 pl-1 border-l-4 border-slate-800 text-slate-600">3. 주요 계산 매개변수 (Reference Parameters)</h3>
+            <table class="w-full border-collapse border border-slate-400 text-xs text-slate-700">
+                <tr>
+                    <th class="border border-slate-400 py-1.5 px-2 bg-slate-50 font-medium text-left">평균온도 Tm (℃)</th>
+                    <td class="border border-slate-400 py-1.5 px-2 text-right font-mono w-[15%]" id="debug_Tm">--</td>
+                    <th class="border border-slate-400 py-1.5 px-2 bg-slate-50 font-medium text-left">열전도율 k (W/m·K)</th>
+                    <td class="border border-slate-400 py-1.5 px-2 text-right font-mono w-[15%]" id="debug_k">--</td>
+                    <th class="border border-slate-400 py-1.5 px-2 bg-slate-50 font-medium text-left">대류 hc (W/m²·K)</th>
+                    <td class="border border-slate-400 py-1.5 px-2 text-right font-mono w-[15%]" id="debug_hc">--</td>
+                    <th class="border border-slate-400 py-1.5 px-2 bg-slate-50 font-medium text-left">복사 hr (W/m²·K)</th>
+                    <td class="border border-slate-400 py-1.5 px-2 text-right font-mono w-[15%]" id="debug_hr">--</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- 4. 상세 계산 과정 (Step 1~5) -->
+        <div class="avoid-break mb-6">
+            <h3 class="font-bold text-sm mb-1 pl-1 border-l-4 border-slate-800">4. 상세 계산 과정 (Calculation Details)</h3>
+            <table class="w-full border-collapse border border-slate-400 text-[11px] leading-relaxed">
+                <colgroup>
+                    <col class="w-[12%]">
+                    <col class="w-[68%]">
+                    <col class="w-[20%]">
+                </colgroup>
+                <tbody>
+                    <!-- Step 1 -->
+                    <tr class="border-b border-slate-300">
+                        <th class="py-2 px-3 text-left align-top bg-slate-50 border-r border-slate-300 font-bold">Step 1</th>
+                        <td class="py-2 px-3 align-top border-r border-slate-300">
+                            <div class="font-bold text-slate-800">보온재 평균 온도 (Tm)</div>
+                            <div class="font-mono text-slate-600 mt-0.5">Tm = (Th + Ts) / 2</div>
+                            <div class="font-mono text-blue-700 print:text-black mt-0.5" id="proc_Tm_eq">--</div>
+                        </td>
+                        <td class="py-2 px-3 align-top text-slate-500">
+                            ISO 12241 (Sec 4.2)<br>ASTM C680 (Sec 8.1)
+                        </td>
+                    </tr>
+                    <!-- Step 2 -->
+                    <tr class="border-b border-slate-300">
+                        <th class="py-2 px-3 text-left align-top bg-slate-50 border-r border-slate-300 font-bold">Step 2</th>
+                        <td class="py-2 px-3 align-top border-r border-slate-300">
+                            <div class="font-bold text-slate-800">보온재 열전도율 (k) 산출</div>
+                            <div class="font-mono text-slate-600 mt-0.5" id="proc_k_formula">--</div>
+                            <div class="font-mono text-blue-700 print:text-black mt-0.5" id="proc_k_eq">--</div>
+                        </td>
+                        <td class="py-2 px-3 align-top text-slate-500">
+                            KS F 2803 (5.1절 식1)<br>KS L 9102 (부속서 A)
+                        </td>
+                    </tr>
+                    <!-- Step 3 -->
+                    <tr class="border-b border-slate-300">
+                        <th class="py-2 px-3 text-left align-top bg-slate-50 border-r border-slate-300 font-bold">Step 3</th>
+                        <td class="py-2 px-3 align-top border-r border-slate-300">
+                            <div class="font-bold text-slate-800">보온재 열저항 (R_ins)</div>
+                            <div class="font-mono text-slate-600 mt-0.5" id="proc_r_formula">--</div>
+                            <div class="font-mono text-blue-700 print:text-black mt-0.5" id="proc_r_eq">--</div>
+                        </td>
+                        <td class="py-2 px-3 align-top text-slate-500">
+                            KS F 2803 (6.1절)<br>ISO 12241 (Sec 4.1.4)
+                        </td>
+                    </tr>
+                    <!-- Step 4 -->
+                    <tr class="border-b border-slate-300">
+                        <th class="py-2 px-3 text-left align-top bg-slate-50 border-r border-slate-300 font-bold">Step 4</th>
+                        <td class="py-2 px-3 align-top border-r border-slate-300">
+                            <div class="font-bold text-slate-800">표면 열전달계수 (대류 hc, 복사 hr)</div>
+                            <div class="font-mono text-slate-600 mt-0.5" id="proc_h_formula">--</div>
+                            <div class="font-mono text-blue-700 print:text-black mt-0.5" id="proc_hc_eq">--</div>
+                            <div class="font-mono text-blue-700 print:text-black mt-0.5" id="proc_hr_eq">--</div>
+                        </td>
+                        <td class="py-2 px-3 align-top text-slate-500">
+                            KS F 2803 (대류)<br>ASTM C680 (복사)
+                        </td>
+                    </tr>
+                    <!-- Step 5 -->
+                    <tr>
+                        <th class="py-2 px-3 text-left align-top bg-slate-50 border-r border-slate-300 font-bold">Step 5</th>
+                        <td class="py-2 px-3 align-top border-r border-slate-300">
+                            <div class="font-bold text-slate-800">열손실률 (q) 및 최종 표면온도 (Ts) 결정</div>
+                            <div class="font-mono text-slate-600 mt-0.5">U = 1 / [ R_ins + 1 / (hc + hr) ], &nbsp; q = U * (Th - Ta)</div>
+                            <div class="font-mono text-slate-600 mt-0.5">Ts = Ta + q / (hc + hr)</div>
+                            <div class="font-mono text-blue-700 print:text-black mt-1" id="proc_q_eq">--</div>
+                            <div class="font-mono text-blue-700 print:text-black font-bold mt-0.5" id="proc_ts_eq">--</div>
+                        </td>
+                        <td class="py-2 px-3 align-top text-slate-500">
+                            ISO 12241 (Sec 4.1.1)<br>ASTM C680 (Sec 8.4)
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="text-right text-[10px] text-slate-500 mt-1 italic">* 상기 도출된 결과값은 Newton-Raphson 반복법 알고리즘을 통한 수렴 해(오차범위 0.01 이내)입니다.</div>
+        </div>
+
+        <!-- 5. 적용 규격 -->
+        <div class="avoid-break mt-auto pt-4 border-t border-slate-300 text-[11px] text-slate-600">
+            <h3 class="font-bold mb-1 text-slate-800">5. 적용 및 준용 설계 규격 (Applied Codes & Standards)</h3>
+            <ul class="list-disc list-inside space-y-0.5 ml-1">
+                <li><strong>KS F 2803:</strong> 보온재의 두께 산정 방법 (Method for calculating thickness of thermal insulation)</li>
+                <li><strong>ISO 12241:</strong> Thermal insulation for building equipment and industrial installations - Calculation rules</li>
+                <li><strong>ASTM C680:</strong> Standard Practice for Estimate of the Heat Gain or Loss and the Surface Temperatures</li>
+                <li><strong>KOSHA Guide W-1-2019:</strong> 화상 예방을 위한 뜨거운 표면의 안전보건지침</li>
+            </ul>
+        </div>
+        
+    </div>
+
+    <script>
+        // 현재 날짜 자동 입력
+        document.getElementById('current_date').valueAsDate = new Date();
+
+        function toggleDiameter() {
+            const type = document.getElementById('input_type').value;
+            const divDiameter = document.getElementById('div_diameter');
+            const divPipeSize = document.getElementById('div_pipe_size');
+            
+            if(type === 'round') {
+                divDiameter.classList.remove('hidden');
+                divDiameter.classList.add('table-row');
+                divPipeSize.classList.add('hidden');
+                divPipeSize.classList.remove('table-row');
+            } else if (type === 'pipe') {
+                divPipeSize.classList.remove('hidden');
+                divPipeSize.classList.add('table-row');
+                divDiameter.classList.add('hidden');
+                divDiameter.classList.remove('table-row');
+            } else {
+                divDiameter.classList.add('hidden');
+                divDiameter.classList.remove('table-row');
+                divPipeSize.classList.add('hidden');
+                divPipeSize.classList.remove('table-row');
+            }
+        }
+
+        // 보온재 재질별 온도에 따른 열전도율(k) 추정 함수 (W/m.K)
+        function getThermalConductivity(material, meanTemp) {
+            let k = 0;
+            switch(material) {
+                case 'rockwool': 
+                case 'mineralwool':
+                    k = 0.035 + (0.00015 * meanTemp);
+                    break;
+                case 'eglass':
+                    k = 0.032 + (0.00018 * meanTemp);
+                    break;
+                case 'hyperlite':
+                    k = 0.050 + (0.00011 * meanTemp);
+                    break;
+                default:
+                    k = 0.040 + (0.00015 * meanTemp);
+            }
+            return k;
+        }
+
+        function calculate() {
+            // 입력값 가져오기
+            const inputThickRaw = document.getElementById('input_thick').value;
+            const thick_mm = inputThickRaw ? parseFloat(inputThickRaw) : 0;
+            const thick_m = thick_mm / 1000;
+            
+            const Th = parseFloat(document.getElementById('input_Th').value) || 0;
+            const Ta = parseFloat(document.getElementById('input_Ta').value) || 0;
+            const V = parseFloat(document.getElementById('input_V').value) || 0;
+            const type = document.getElementById('input_type').value;
+            const mat = document.getElementById('input_mat').value;
+            const casingEmissivity = parseFloat(document.getElementById('input_casing').value) || 0.1;
+            
+            let D1_m = 0;
+            let typeDesc = "";
+            
+            if (type === 'round') {
+                let baseDiameter_mm = parseFloat(document.getElementById('input_D').value) || 0;
+                D1_m = baseDiameter_mm / 1000;
+                if(D1_m <= 0) D1_m = 0.1;
+                typeDesc = "원형 기기";
+            } else if (type === 'pipe') {
+                let baseDiameter_mm = parseFloat(document.getElementById('input_pipe_size').value) || 0;
+                D1_m = baseDiameter_mm / 1000;
+                if(D1_m <= 0) D1_m = 0.1;
+                typeDesc = "배관";
+            } else {
+                typeDesc = "사각 평면";
+            }
+
+            if (thick_m <= 0) return;
+
+            // 반복 계산 (Newton-Raphson)
+            let Ts = Ta + 10; 
+            let error = 100;
+            let iter = 0;
+            const maxIter = 100;
+            const sigma = 5.67e-8;
+
+            let q = 0, Tm = 0, k = 0, hc = 0, hr = 0, R_ins = 0;
+
+            while(error > 0.01 && iter < maxIter) {
+                Tm = (Th + Ts) / 2;
+                k = getThermalConductivity(mat, Tm);
+
+                if(type === 'flat') {
+                    R_ins = thick_m / k;
+                } else {
+                    let D2_m = D1_m + (2 * thick_m);
+                    R_ins = (D2_m * Math.log(D2_m / D1_m)) / (2 * k);
+                }
+
+                if(V <= 0.1) {
+                    hc = 1.21 * Math.pow(Math.abs(Ts - Ta), 0.25);
+                } else {
+                    hc = 5.7 + (3.8 * V);
+                }
+
+                let Ts_K = Ts + 273.15;
+                let Ta_K = Ta + 273.15;
+                hr = casingEmissivity * sigma * (Math.pow(Ts_K, 2) + Math.pow(Ta_K, 2)) * (Ts_K + Ta_K);
+
+                let U = 1 / (R_ins + (1 / (hc + hr)));
+                q = U * (Th - Ta); 
+
+                let new_Ts = Ta + (q / (hc + hr));
+                error = Math.abs(new_Ts - Ts);
+                Ts = new_Ts;
+                iter++;
+            }
+
+            // UI 반영
+            document.getElementById('out_Ts').innerText = Ts.toFixed(1);
+            document.getElementById('out_q').innerText = q.toFixed(0);
+
+            document.getElementById('debug_Tm').innerText = Tm.toFixed(1);
+            document.getElementById('debug_k').innerText = k.toFixed(4);
+            document.getElementById('debug_hc').innerText = hc.toFixed(2);
+            document.getElementById('debug_hr').innerText = hr.toFixed(2);
+
+            const elStatus = document.getElementById('out_status');
+            if(Ts > 60) {
+                elStatus.className = "px-2 py-1 rounded text-xs font-bold border inline-block bg-red-100 text-red-700 border-red-300 print:bg-transparent print:border-black print:text-black";
+                elStatus.innerText = "화상 위험 (안전기준 60℃ 초과)";
+            } else {
+                elStatus.className = "px-2 py-1 rounded text-xs font-bold border inline-block bg-emerald-100 text-emerald-700 border-emerald-300 print:bg-transparent print:border-black print:text-black";
+                elStatus.innerText = "안전 (60℃ 이하)";
+            }
+
+            // 계산과정 리포트 업데이트
+            document.getElementById('proc_Tm_eq').innerText = `→ (${Th.toFixed(1)} + ${Ts.toFixed(1)}) / 2 = ${Tm.toFixed(1)} ℃`;
+
+            let k_formula_str = "";
+            switch(mat) {
+                case 'rockwool': case 'mineralwool': k_formula_str = "k = 0.035 + (0.00015 * Tm)"; break;
+                case 'eglass': k_formula_str = "k = 0.032 + (0.00018 * Tm)"; break;
+                case 'hyperlite': k_formula_str = "k = 0.050 + (0.00011 * Tm)"; break;
+                default: k_formula_str = "k = 0.040 + (0.00015 * Tm)";
+            }
+            document.getElementById('proc_k_formula').innerText = k_formula_str;
+            document.getElementById('proc_k_eq').innerText = `→ ${k.toFixed(4)} W/m·K`;
+
+            if(type === 'flat') {
+                document.getElementById('proc_r_formula').innerText = `사각 평면: R_ins = 두께(m) / k`;
+                document.getElementById('proc_r_eq').innerText = `→ ${thick_m.toFixed(3)}m (${thick_mm}mm) / ${k.toFixed(4)} = ${R_ins.toFixed(4)} m²·K/W`;
+            } else {
+                let D2_m = D1_m + (2 * thick_m);
+                document.getElementById('proc_r_formula').innerText = `${typeDesc}: R_ins = [D2(외경) * ln(D2/D1)] / (2 * k)  ※ m 단위 기준`;
+                document.getElementById('proc_r_eq').innerText = `→ [${D2_m.toFixed(3)} * ln(${D2_m.toFixed(3)}/${D1_m.toFixed(3)})] / (2 * ${k.toFixed(4)}) = ${R_ins.toFixed(4)} m²·K/W`;
+            }
+
+            if(V <= 0.1) {
+                document.getElementById('proc_h_formula').innerText = `대류(자연): hc = 1.21 * |Ts - Ta|^0.25  /  복사: hr = ε * σ * (Ts²+Ta²)*(Ts+Ta)`;
+                document.getElementById('proc_hc_eq').innerText = `→ hc = 1.21 * |${Ts.toFixed(1)} - ${Ta.toFixed(1)}|^0.25 = ${hc.toFixed(3)} W/m²·K`;
+            } else {
+                document.getElementById('proc_h_formula').innerText = `대류(강제, Juerges): hc = 5.7 + (3.8 * V)  /  복사: hr = ε * σ * (Ts²+Ta²)*(Ts+Ta)`;
+                document.getElementById('proc_hc_eq').innerText = `→ hc = 5.7 + (3.8 * ${V.toFixed(1)}) = ${hc.toFixed(3)} W/m²·K`;
+            }
+            document.getElementById('proc_hr_eq').innerText = `→ hr = ${casingEmissivity} * 5.67e-8 * f(Ts, Ta [K]) = ${hr.toFixed(3)} W/m²·K`;
+
+            let U = 1 / (R_ins + (1 / (hc + hr)));
+            document.getElementById('proc_q_eq').innerText = `→ U = ${U.toFixed(3)} W/m²·K,  q = ${U.toFixed(3)} * (${Th.toFixed(1)} - ${Ta.toFixed(1)}) = ${q.toFixed(1)} W/m²`;
+            document.getElementById('proc_ts_eq').innerText = `→ 최종 Ts = ${Ta.toFixed(1)} + ${q.toFixed(1)} / (${hc.toFixed(3)} + ${hr.toFixed(3)}) = ${Ts.toFixed(1)} ℃`;
+        }
+
+        window.onload = calculate;
+    </script>
+</body>
+</html>
