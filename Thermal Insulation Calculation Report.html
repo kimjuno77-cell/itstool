@@ -312,7 +312,7 @@
                             <div class="font-mono text-blue-700 print:text-black mt-0.5" id="proc_Tm_eq">--</div>
                         </td>
                         <td class="py-2 px-3 align-top text-slate-500">
-                            ISO 12241 (Sec 4.2)<br>ASTM C680 (Sec 8.1)
+                            ISO 12241, SECTION 4.2, PARA. 4.2.1<br>ASTM C680, SECTION 8.1
                         </td>
                     </tr>
                     <!-- Step 2 -->
@@ -324,7 +324,7 @@
                             <div class="font-mono text-blue-700 print:text-black mt-0.5" id="proc_k_eq">--</div>
                         </td>
                         <td class="py-2 px-3 align-top text-slate-500">
-                            KS F 2803 (5.1절 식1)<br>KS L 9102 (부속서 A)
+                            KS F 2803, SECTION 5.1, PARA. 5.1.1<br>KS L 9102, Appendix A
                         </td>
                     </tr>
                     <!-- Step 3 -->
@@ -336,7 +336,7 @@
                             <div class="font-mono text-blue-700 print:text-black mt-0.5" id="proc_r_eq">--</div>
                         </td>
                         <td class="py-2 px-3 align-top text-slate-500">
-                            KS F 2803 (6.1절)<br>ISO 12241 (Sec 4.1.4)
+                            KS F 2803, SECTION 6.1<br>ISO 12241, SECTION 4.1, PARA. 4.1.4
                         </td>
                     </tr>
                     <!-- Step 4 -->
@@ -349,7 +349,7 @@
                             <div class="font-mono text-blue-700 print:text-black mt-0.5" id="proc_hr_eq">--</div>
                         </td>
                         <td class="py-2 px-3 align-top text-slate-500">
-                            KS F 2803 (대류)<br>ASTM C680 (복사)
+                            KS F 2803, SECTION 7.1<br>ASTM C680, SECTION 8.2
                         </td>
                     </tr>
                     <!-- Step 5 -->
@@ -363,7 +363,7 @@
                             <div class="font-mono text-blue-700 print:text-black font-bold mt-0.5" id="proc_ts_eq">--</div>
                         </td>
                         <td class="py-2 px-3 align-top text-slate-500">
-                            ISO 12241 (Sec 4.1.1)<br>ASTM C680 (Sec 8.4)
+                            ISO 12241, SECTION 4.1, PARA. 4.1.1<br>ASTM C680, SECTION 8.4
                         </td>
                     </tr>
                 </tbody>
@@ -378,6 +378,33 @@
                 <li><strong>KS F 2803:</strong> 보온재의 두께 산정 방법 (Method for calculating thickness of thermal insulation)</li>
                 <li><strong>ISO 12241:</strong> Thermal insulation for building equipment and industrial installations - Calculation rules</li>
                 <li><strong>ASTM C680:</strong> Standard Practice for Estimate of the Heat Gain or Loss and the Surface Temperatures</li>
+                <li><strong>KOSHA Guide W-1-2019:</strong> 화상 예방을 위한 뜨거운 표면의 안전보건지침</li>
+            </ul>
+        </div>
+        
+        <!-- PAGE 2 : Appendix -->
+        <div class="avoid-break mt-12 pt-8 border-t-2 border-slate-800 print-break text-sm text-slate-700">
+            <h2 class="text-xl font-bold text-slate-900 mb-4 pb-2 border-b-2 border-slate-800">[참고사항] 엔지니어링 계산서 부록 (Appendix)</h2>
+            
+            <h3 class="font-bold text-slate-800 mb-2 mt-4">1. Calculation User Guide (계산서 사용 가이드)</h3>
+            <ul class="list-disc pl-6 space-y-2 mb-4">
+                <li><strong>설비 제원 및 환경 조건 입력:</strong> 내부 유체 온도, 외기 온도, 풍속 등 기초 환경 데이터를 입력합니다. </li>
+                <li><strong>보온재 및 외장재 설정:</strong> 사용할 보온재 재질과 방사율을 결정하는 외장 마감재를 선택합니다.</li>
+                <li><strong>안전성 평가 기준:</strong> 계산된 표면온도가 KOSHA 가이드라인에 명시된 화상 위험 기준(보통 60℃)을 초과하는지 확인하여 보온 두께를 재조정할 수 있습니다.</li>
+            </ul>
+
+            <h3 class="font-bold text-slate-800 mb-2 mt-4">2. Theoretical Background & Engineering Principles (이론적 배경 및 공학적 원리)</h3>
+            <ul class="list-disc pl-6 space-y-2 mb-4">
+                <li><strong>정상 상태 1차원 열전달 (1D Steady-State Heat Transfer):</strong> 원통(배관) 및 평판에서의 열전도 방정식을 적용하여 단열재를 통한 열저항을 도출합니다.</li>
+                <li><strong>표면 열전달계수 (Surface Heat Transfer Coefficient):</strong> 대류(자유대류/강제대류) 및 복사(Stefan-Boltzmann 법칙)에 의한 복합 열전달 계수를 산출합니다.</li>
+                <li><strong>수치 해석적 접근 (Newton-Raphson Method):</strong> 표면온도를 미지수로 두고 비선형 열평형 방정식(전도 열량 = 대류+복사 열량)을 반복 계산하여 최적 해로 수렴시킵니다.</li>
+            </ul>
+
+            <h3 class="font-bold text-slate-800 mb-2 mt-4">3. Source Literature & Reference Bibliography (참고 문헌 및 참조)</h3>
+            <ul class="list-disc pl-6 space-y-2">
+                <li><strong>ISO 12241:</strong> Thermal insulation for building equipment and industrial installations (SECTION 4.2 Calculation of heat transfer, SECTION 4.1.4 Thermal resistance)</li>
+                <li><strong>ASTM C680:</strong> Standard Practice for Estimate of the Heat Gain or Loss and the Surface Temperatures (SECTION 8.1 / 8.4)</li>
+                <li><strong>KS F 2803:</strong> 보온재의 두께 산정 방법 (SECTION 5.1 / SECTION 6.1)</li>
                 <li><strong>KOSHA Guide W-1-2019:</strong> 화상 예방을 위한 뜨거운 표면의 안전보건지침</li>
             </ul>
         </div>

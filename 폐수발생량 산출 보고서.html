@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>폐수발생량 산출 보고서 (Wastewater Calculation Report)</title>
+    <style>
+        /* === 기본 및 타이포그래피 === */
+        :root {
+            --primary: #1e3a8a; /* Deep Blue */
+            --primary-light: #eff6ff;
+            --secondary: #0f766e; /* Teal */
+            --accent: #be123c; /* Rose */
+            --text-main: #334155;
+            --text-muted: #64748b;
+            --border: #cbd5e1;
+            --bg-page: #f1f5f9;
+            --bg-paper: #ffffff;
+        }
+
+        body {
+            font-family: 'Pretendard', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+            line-height: 1.6;
+            color: var(--text-main);
+            margin: 0;
+            background-color: var(--bg-page);
+            padding: 40px 20px;
+        }
+
+        /* === 페이퍼 뷰 (웹상에서 A4 느낌) === */
+        .document-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--bg-paper);
+            padding: 50px 60px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        /* === 보고서 헤더 (문서 정보) === */
+        .report-header {
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .report-title {
+            text-align: center;
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 0 0 5px 0;
+            letter-spacing: -0.5px;
+        }
+        .report-subtitle {
+            text-align: center;
+            font-size: 16px;
+            color: var(--text-muted);
+            margin: 0 0 30px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .meta-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .meta-table th {
+            background-color: var(--primary-light);
+            color: var(--primary);
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            text-align: left;
+            width: 15%;
+        }
+        .meta-table td {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            width: 35%;
+        }
+        .meta-input {
+            width: 100%;
+            border: none;
+            background: transparent;
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--text-main);
+            outline: none;
+        }
+        .meta-input:focus {
+            border-bottom: 1px solid var(--primary);
+        }
+
+        /* === 섹션 타이틀 === */
+        h2 {
+            font-size: 22px;
+            color: #ffffff;
+            background-color: var(--primary);
+            padding: 10px 15px;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        h3 {
+            font-size: 18px;
+            color: var(--primary);
+            margin-top: 30px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 5px;
+        }
+        h3::before {
+            content: "▶";
+            font-size: 14px;
+            margin-right: 8px;
+            color: var(--secondary);
+        }
+
+        /* === 공통 입력 및 UI 요소 === */
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+        table.data-table th, table.data-table td {
+            border: 1px solid var(--border);
+            padding: 10px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        table.data-table th {
+            background-color: #f8fafc;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+        table.data-table td:nth-child(2) { text-align: left; }
+
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        input[type="number"] { text-align: right; }
+        input[type="text"]:focus, input[type="number"]:focus, select:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(30,58,138,0.1);
+        }
+        
+        .readonly-calc {
+            background-color: #f1f5f9;
+            font-weight: bold;
+            border: 1px solid var(--border);
+            padding: 8px;
+            border-radius: 4px;
+            display: inline-block;
+            width: 100%;
+            text-align: right;
+            box-sizing: border-box;
+            color: var(--primary);
+        }
+
+        /* === 폼 그리드 배치 === */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .form-label {
+            font-weight: 600;
+            font-size: 13.5px;
+            color: var(--text-main);
+        }
+        .input-with-unit {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .input-with-unit input {
+            padding-right: 45px;
+        }
+        .unit-label {
+            position: absolute;
+            right: 10px;
+            color: var(--text-muted);
+            font-size: 13px;
+            pointer-events: none;
+        }
+
+        /* === 설계 근거 & 계산 과정 박스 (리포트 핵심) === */
+        .basis-box {
+            background-color: #f8fafc;
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--secondary);
+            padding: 15px;
+            margin: 15px 0 25px 0;
+            font-size: 13.5px;
+        }
+        .basis-title {
+            font-weight: bold;
+            color: var(--secondary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .basis-content {
+            display: grid;
+            grid-template-columns: 80px 1fr;
+            gap: 5px 10px;
+            line-height: 1.5;
+        }
+        .basis-lbl {
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        
+        .calc-formula {
+            background: #ffffff;
+            border: 1px dashed #94a3b8;
+            padding: 10px;
+            margin-top: 10px;
+            font-family: inherit;
+            font-size: 14.5px;
+            color: #0f172a;
+            line-height: 1.7;
+        }
+        .calc-result-line {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #e2e8f0;
+            text-align: right;
+            font-size: 16px;
+        }
+        .result-val {
+            font-weight: 900;
+            color: var(--accent);
+            font-size: 18px;
+        }
+
+        /* === Shelter 및 경고 뱃지 === */
+        .shelter-toggle {
+            background-color: #fffbeb;
+            border: 1px solid #fcd34d;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            color: #b45309;
+            cursor: pointer;
+        }
+        .shelter-toggle input[type="checkbox"] {
+            width: 18px; height: 18px; cursor: pointer;
+        }
+        
+        .badge-warning {
+            display: none;
+            background-color: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fca5a5;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        /* === 탱크 시각화 CSS === */
+        .tank-visual-container {
+            display: flex;
+            align-items: flex-end;
+            gap: 30px;
+            background: #f8fafc;
+            padding: 20px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .tank-drawing {
+            width: 140px;
+            height: 180px;
+            border: 4px solid #475569;
+            border-top: none;
+            border-radius: 0 0 15px 15px;
+            position: relative;
+            background: linear-gradient(to bottom, #ffffff, #f1f5f9);
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        .tank-max-line {
+            position: absolute;
+            width: 100%;
+            border-top: 1px dashed var(--accent);
+            color: var(--accent);
+            font-size: 10px;
+            text-align: right;
+            padding-right: 5px;
+            box-sizing: border-box;
+            z-index: 10;
+        }
+        .tank-drain-vol {
+            position: absolute;
+            left: 0; width: 100%;
+            background: rgba(14, 165, 233, 0.6);
+            border-top: 2px dashed #0284c7;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: #0c4a6e;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .tank-ll-vol {
+            position: absolute;
+            bottom: 0; left: 0; width: 100%;
+            background: #94a3b8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        /* === 최종 요약 박스 === */
+        .summary-box {
+            background-color: var(--primary);
+            color: white;
+            padding: 30px;
+            border-radius: 8px;
+            margin-top: 40px;
+            box-shadow: 0 10px 15px -3px rgba(30,58,138,0.3);
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            font-size: 18px;
+        }
+        .summary-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+            margin-top: 15px;
+            font-size: 24px;
+            font-weight: 800;
+            color: #fde047; /* Yellow */
+        }
+
+        /* 프린트 버튼 */
+        .print-btn-wrap {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+        .btn-print {
+            background-color: var(--secondary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn-print:hover { background-color: #0d5c56; }
+        
+        .print-only-chk { display: none; }
+
+        /* === 항목 추가/삭제 버튼 === */
+        .btn-add {
+            background-color: #f1f5f9;
+            border: 1px dashed #94a3b8;
+            color: #475569;
+            padding: 8px 15px;
+            width: 100%;
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-top: -5px;
+            margin-bottom: 15px;
+            transition: all 0.2s;
+        }
+        .btn-add:hover { background-color: #e2e8f0; color: #0f172a; border-color: #64748b; }
+        
+        .btn-remove {
+            background-color: #fee2e2;
+            color: #ef4444;
+            border: 1px solid #fca5a5;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-remove:hover { background-color: #fecaca; color: #b91c1c; }
+
+        /* === 인쇄 최적화 (PDF 제출용) === */
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .document-container { border: none; box-shadow: none; padding: 0; max-width: 100%; }
+            .print-btn-wrap, .btn-print, .print-hidden { display: none !important; }
+            
+            /* 입력폼을 텍스트처럼 보이게 */
+            input[type="text"], input[type="number"], select, .meta-input { 
+                border: none; 
+                background: transparent; 
+                padding: 0; 
+                height: auto;
+                border-bottom: 1px solid #000; 
+                border-radius: 0; 
+                appearance: none; 
+                box-shadow: none !important;
+                color: #000;
+            }
+            .readonly-calc { border: none; background: transparent; color: #000; padding:0; border-bottom: 1px dashed #000;}
+            
+            /* 체크박스 기호 변환 */
+            input[type="checkbox"] { display: none !important; }
+            .print-only-chk { display: inline !important; font-size: 16px; font-weight: bold; margin-right: 5px; color:#000; }
+            
+            /* 컬러 인쇄 강제 */
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            
+            /* 배경색 조정 */
+            .basis-box { page-break-inside: avoid; background-color: #f8fafc !important; }
+            h2 { background-color: var(--primary) !important; color: white !important; page-break-after: avoid; }
+            .summary-box { page-break-inside: avoid; }
+            .tank-visual-container { page-break-inside: avoid; }
+            
+            /* 선택안된 테이블 행 숨김 */
+            .hide-on-print-if-unchecked:not(.is-checked-row) { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="document-container">
+    <div class="print-btn-wrap">
+        <button class="btn-print" onclick="window.print()">🖨️ PDF 보고서 인쇄 (제출용)</button>
+    </div>
+
+    <!-- 리포트 헤더 -->
+    <div class="report-header">
+        <h1 class="report-title">폐수발생량 산출 보고서</h1>
+        <h2 class="report-subtitle">Calculation Report for Wastewater Generation</h2>
+        
+        <table class="meta-table">
+            <tr>
+                <th>Project Name</th>
+                <td><input type="text" class="meta-input" value="공정 지역 폐수처리시설 신설 프로젝트"></td>
+                <th>Document No.</th>
+                <td><input type="text" class="meta-input" value="WW-CALC-RPT-001"></td>
+            </tr>
+            <tr>
+                <th>Prepared By</th>
+                <td><input type="text" class="meta-input" value="안전환경기술팀"></td>
+                <th>Date</th>
+                <td><input type="date" class="meta-input" value="2026-07-21"></td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- 공통 설계 기준 (General Design Basis) -->
+    <div class="basis-box" style="border-left-color: var(--primary);">
+        <div class="basis-title">📌 공통 설계 기준 (General Design Basis)</div>
+        <div class="basis-content">
+            <div class="basis-lbl">우수 배수:</div>
+            <div><strong>KDS 61 00 00, SECTION 4.1 (하수도설계기준 - 계획우수량)</strong> - 관할 지역 50년/100년 빈도 최대강우강도 적용</div>
+            
+            <div class="basis-lbl">강우 강도:</div>
+            <div>
+                <span style="display:inline-block; width:120px; border-bottom:1px solid #000;">
+                    <input type="number" id="maxPrecip" value="102.00" step="0.01" style="border:none; padding:0; background:transparent;" oninput="calcAll()">
+                </span> <strong>mm/hr</strong> 
+                <span style="color:var(--text-muted); font-size:12px;">(사업장 관할 기상청 K확률강우량 기준)</span>
+            </div>
+            
+            <div class="basis-lbl">소화 설비:</div>
+            <div><strong>KOSHA P-102-2012, PARA. 5.1 / NFPA 15, SECTION 7.1</strong> - 화재 비상 시 소화수 가동시간 통상 20~60분 기준 적용</div>
+            
+            <div class="basis-lbl">안전 샤워:</div>
+            <div><strong>ANSI/ISEA Z358.1, SECTION 4.1 & KOSHA W-1-2019, PARA. 5.2</strong> - 유량 Min 75.7 L/min (Eye Min 1.5 L/min), 가동 15분 이상</div>
+        </div>
+    </div>
+
+
+    <h2>1. AMMONIA STORAGE AREA
+        <label class="shelter-toggle" style="font-size:13px; margin:0; padding:5px 10px;">
+            <span class="print-only-chk" id="p_ammShelterCheck"></span>
+            <input type="checkbox" id="ammShelterCheck" onchange="calcAll()" class="calc-chk"> 
+            Shelter (지붕) 적용
+        </label>
+    </h2>
+
+    <h3>1.1 강우량에 의한 발생량 (Rainfall Volume)</h3>
+    <div class="form-grid">
+        <div class="form-group">
+            <label class="form-label">해당 구역 (Area)</label>
+            <input type="text" value="Tank Lorry Area">
+        </div>
+        <div class="form-group">
+            <label class="form-label">가로 크기 (Length)</label>
+            <div class="input-with-unit">
+                <input type="number" id="ammRainW" value="4600" oninput="calcAll()"><span class="unit-label">mm</span>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">세로 크기 (Width)</label>
+            <div class="input-with-unit">
+                <input type="number" id="ammRainL" value="14500" oninput="calcAll()"><span class="unit-label">mm</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="basis-box">
+        <div class="basis-title">📐 설계 근거 및 산출 과정</div>
+        <div class="basis-content">
+            <div class="basis-lbl">적용 근거:</div><div>KDS 61 00 00 최대강우강도 우수 유입량 산정</div>
+            <div class="basis-lbl">면적 산출:</div><div>W(m) × L(m) = <span id="f_ammArea" class="font-bold">0.0</span> m²</div>
+        </div>
+        <div class="calc-formula">
+            <span style="color:#64748b;">V_rain = Area(m²) × Precipitation(mm/hr) × (1 hr / 1000)</span><br>
+            V = <span id="f_ammArea_sub">0.0</span> × <span id="f_ammPrecip">102</span> ÷ 1000
+        </div>
+        <div class="calc-result-line">
+            산출 발생량: <span id="ammRainResult" class="result-val">0.00</span> m³ 
+            <span id="ammShelterText" style="color:var(--accent); font-weight:bold; font-size:14px; margin-left:10px;"></span>
+        </div>
+    </div>
+
+    <h3>1.2 살수 설비에 의한 발생량 (Water Spray - 30분 기준)</h3>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 8%;">적용</th>
+                <th style="width: 40%;">설비 명칭 (Area / Equipment)</th>
+                <th style="width: 20%;">살수 유량 (m³/hr)</th>
+                <th style="width: 24%;">30분 가동 산출량 (m³)</th>
+                <th style="width: 8%;" class="print-hidden">관리</th>
+            </tr>
+        </thead>
+        <tbody id="tbody_spray">
+            <tr class="calc-row">
+                <td><span class="print-only-chk"></span><input type="checkbox" class="calc-chk chk-spray" checked onchange="calcAll()"></td>
+                <td><input type="text" value="Tank Unloading Area"></td>
+                <td><input type="number" class="val-spray-flow" value="19.50" oninput="calcAll()"></td>
+                <td><span class="readonly-calc result-spray-half">0.00</span></td>
+                <td class="print-hidden">-</td>
+            </tr>
+            <tr class="calc-row">
+                <td><span class="print-only-chk"></span><input type="checkbox" class="calc-chk chk-spray" checked onchange="calcAll()"></td>
+                <td><input type="text" value="Unloading Pump Area"></td>
+                <td><input type="number" class="val-spray-flow" value="7.68" oninput="calcAll()"></td>
+                <td><span class="readonly-calc result-spray-half">0.00</span></td>
+                <td class="print-hidden">-</td>
+            </tr>
+            <tr class="calc-row">
+                <td><span class="print-only-chk"></span><input type="checkbox" class="calc-chk chk-spray" checked onchange="calcAll()"></td>
+                <td><input type="text" value="Amm. Storage Tank"></td>
+                <td><input type="number" class="val-spray-flow" value="15.17" oninput="calcAll()"></td>
+                <td><span class="readonly-calc result-spray-half">0.00</span></td>
+                <td class="print-hidden">-</td>
+            </tr>
+        </tbody>
+        <tfoot>
+            <tr style="background-color: #f8fafc; font-weight: bold;">
+                <td colspan="3" style="text-align: right; border: 1px solid var(--border); padding: 10px;">선택 항목 합계 (Total)</td>
+                <td style="border: 1px solid var(--border); padding: 10px;"><span id="sprayTotal" style="color: var(--accent); font-size: 15px;">0.00</span> m³</td>
+                <td class="print-hidden" style="border: 1px solid var(--border);"></td>
+            </tr>
+        </tfoot>
+    </table>
+    <button class="btn-add print-hidden" onclick="addSprayRow()">➕ 살수 설비 항목 추가하기</button>
+    
+    <h3>1.3 암모니아 저장탱크 드레인 발생량 (Ammonia Storage Tank Drain)</h3>
+    <div class="tank-visual-container">
+        <div class="tank-drawing">
+            <div id="tkVisMax" class="tank-max-line" style="bottom: 80%;">Max</div>
+            <div id="tkVisDrain" class="tank-drain-vol" style="height: 60%; bottom: 10%;"><span id="tkVisDrainTxt">6400mm</span></div>
+            <div id="tkVisLL" class="tank-ll-vol" style="height: 10%;">LL</div>
+        </div>
+        <div class="form-grid" style="flex:1; margin-bottom:0;">
+            <div class="form-group">
+                <label class="form-label">탱크 내경 (Diameter)</label>
+                <div class="input-with-unit"><input type="number" id="tkDia" value="5500" oninput="calcAll()"><span class="unit-label">mm</span></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">최고 수위 (Max Level)</label>
+                <div class="input-with-unit"><input type="number" id="tkMaxL" value="7200" oninput="calcAll()"><span class="unit-label">mm</span></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">최저 수위 (LL Level)</label>
+                <div class="input-with-unit"><input type="number" id="tkLL" value="800" oninput="calcAll()"><span class="unit-label">mm</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="basis-box">
+        <div class="basis-title">📐 설계 근거 및 산출 과정</div>
+        <div class="basis-content">
+            <div class="basis-lbl">적용 근거:</div><div>정비(Turnaround) 목적의 Total Drain (Max → LL 수위 배출) 조건 (Worst Case)</div>
+        </div>
+        <div class="calc-formula">
+            <span style="color:#64748b;">V_drain = π × r² × Δh</span><br>
+            V = 3.14159 × (<span id="f_tkRadius">2.75</span>m)² × <span id="f_tkHeight">6.40</span>m
+        </div>
+        <div class="calc-result-line">
+            저장탱크 배출량: <span id="tkDrainResult" class="result-val">0.00</span> m³
+        </div>
+    </div>
+
+    <!-- 복구된 1.4 희석탱크 영역 -->
+    <h3>1.4 희석탱크 드레인 발생량 (Dilution Tank Drain)</h3>
+    <div class="tank-visual-container">
+        <div class="tank-drawing">
+            <div id="dilVisMax" class="tank-max-line" style="bottom: 80%;">Max</div>
+            <div id="dilVisDrain" class="tank-drain-vol" style="height: 60%; bottom: 10%;"><span id="dilVisDrainTxt">1000mm</span></div>
+            <div id="dilVisLL" class="tank-ll-vol" style="height: 10%;">LL</div>
+        </div>
+        <div class="form-grid" style="flex:1; margin-bottom:0;">
+            <div class="form-group">
+                <label class="form-label">탱크 내경 (Diameter)</label>
+                <div class="input-with-unit"><input type="number" id="dilDia" value="1400" oninput="calcAll()"><span class="unit-label">mm</span></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">최고 수위 (Max Level)</label>
+                <div class="input-with-unit"><input type="number" id="dilMaxL" value="1800" oninput="calcAll()"><span class="unit-label">mm</span></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">최저 수위 (LL Level)</label>
+                <div class="input-with-unit"><input type="number" id="dilLL" value="800" oninput="calcAll()"><span class="unit-label">mm</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="basis-box">
+        <div class="basis-title">📐 설계 근거 및 산출 과정</div>
+        <div class="basis-content">
+            <div class="basis-lbl">적용 근거:</div><div>정비(Turnaround) 목적의 Total Drain (Max → LL 수위 배출) 조건</div>
+        </div>
+        <div class="calc-formula">
+            <span style="color:#64748b;">V_drain = π × r² × Δh</span><br>
+            V = 3.14159 × (<span id="f_dilRadius">0.70</span>m)² × <span id="f_dilHeight">1.00</span>m
+        </div>
+        <div class="calc-result-line">
+            희석탱크 배출량: <span id="dilDrainResult" class="result-val">0.00</span> m³
+        </div>
+    </div>
+
+    <h3>1.5 탱크로리 트렌치 수용량 (Tank Lorry Trench)</h3>
+    <div class="form-grid">
+        <div class="form-group">
+            <label class="form-label">표준 규격 선택</label>
+            <select id="lorryType" onchange="updateLorry('lorryType', 'lorryCap')">
+                <option value="10">10 톤 (10 m³) - 소형 차량</option>
+                <option value="20" selected>20 톤 (20 m³) - 표준 차량</option>
+                <option value="24">24 톤 (24 m³) - 대형 차량</option>
+                <option value="custom">직접 입력 (Custom)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">차량 용량 (Capacity)</label>
+            <div class="input-with-unit">
+                <input type="number" id="lorryCap" value="20" oninput="calcAll()" readonly style="background:#f1f5f9;"><span class="unit-label">m³</span>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">트렌치 수용 설계 비율</label>
+            <div class="input-with-unit">
+                <input type="number" id="lorryRatio" value="25" oninput="calcAll()"><span class="unit-label">%</span>
+            </div>
+        </div>
+    </div>
+    <div class="basis-box">
+        <div class="basis-title">📐 설계 근거 및 산출 과정</div>
+        <div class="basis-content">
+            <div class="basis-lbl">적용 근거:</div><div>KOSHA D-35-2017 참고 (유출 초기 확산 방지 및 Sump 유도 목적의 발주처 Design Basis 적용)</div>
+        </div>
+        <div class="calc-formula">
+            <span style="color:#64748b;">V_trench = Lorry Capacity(m³) × Ratio(%)</span><br>
+            V = <span id="f_lorryCap">20.00</span> × 0.<span id="f_lorryRatio">25</span>
+        </div>
+        <div class="calc-result-line">
+            트렌치 설계 수용량: <span id="lorryResult" class="result-val">0.00</span> m³
+        </div>
+    </div>
+
+    <h3>1.6 비상 샤워기 작동 발생량 (Safety Shower)</h3>
+    <div class="form-grid">
+        <div class="form-group">
+            <label class="form-label">Safety Shower 유량 <span id="warn_sFlow1" class="badge-warning">⚠️ Min 75.7 미달</span></label>
+            <div class="input-with-unit"><input type="number" id="showerFlow" value="80.0" oninput="calcAll()"><span class="unit-label">L/min</span></div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Eye Washer 유량 <span id="warn_eFlow1" class="badge-warning">⚠️ Min 1.5 미달</span></label>
+            <div class="input-with-unit"><input type="number" id="eyeFlow" value="1.5" oninput="calcAll()"><span class="unit-label">L/min</span></div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">설치 수량</label>
+            <div class="input-with-unit"><input type="number" id="safetyQty" value="1" oninput="calcAll()"><span class="unit-label">EA</span></div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">가동 시간 설정 <span id="warn_time1" class="badge-warning">⚠️ Min 15분 미달</span></label>
+            <div class="input-with-unit"><input type="number" id="safetyTime" value="30" oninput="calcAll()"><span class="unit-label">min</span></div>
+        </div>
+    </div>
+    <div class="basis-box">
+        <div class="basis-title">📐 설계 근거 및 산출 과정</div>
+        <div class="basis-content">
+            <div class="basis-lbl">적용 근거:</div><div>ANSI/ISEA Z358.1 & KOSHA W-1-2019 규격 충족 확인 (경고 기능 작동)</div>
+        </div>
+        <div class="calc-formula">
+            <span style="color:#64748b;">V_shower = [ (Shower Flow + Eye Flow) × Qty × Time ] / 1000</span><br>
+            V = [ (<span id="f_sFlow1">80.0</span> + <span id="f_eFlow1">1.5</span>) × <span id="f_sQty1">1</span> × <span id="f_sTime1">30</span> ] ÷ 1000
+        </div>
+        <div class="calc-result-line">
+            비상샤워 폐수 발생량: <span id="safetyTotalResult" class="result-val">0.00</span> m³
+        </div>
+    </div>
+
+    <h2 style="margin-top: 60px;">2. YPEA STORAGE AREA
+        <label class="shelter-toggle" style="font-size:13px; margin:0; padding:5px 10px;">
+            <span class="print-only-chk" id="p_ypeaShelterCheck"></span>
+            <input type="checkbox" id="ypeaShelterCheck" onchange="calcAll()" class="calc-chk"> 
+            Shelter (지붕) 적용
+        </label>
+    </h2>
+
+    <h3>2.1 강우량에 의한 발생량 (Rainfall Volume)</h3>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 8%;">적용</th>
+                <th style="width: 32%;">구분 (Area)</th>
+                <th style="width: 15%;">가로 (mm)</th>
+                <th style="width: 15%;">세로 (mm)</th>
+                <th style="width: 22%;">산출 면적 (m²)</th>
+                <th style="width: 8%;" class="print-hidden">관리</th>
+            </tr>
+        </thead>
+        <tbody id="tbody_ypea_rain">
+            <tr class="calc-row">
+                <td><span class="print-only-chk"></span><input type="checkbox" class="calc-chk chk-ypea-rain" checked onchange="calcAll()"></td>
+                <td><input type="text" value="Storage Area"></td>
+                <td><input type="number" class="val-ypea-w" value="8400" oninput="calcAll()"></td>
+                <td><input type="number" class="val-ypea-l" value="6000" oninput="calcAll()"></td>
+                <td><span class="readonly-calc result-ypea-area">0.0</span></td>
+                <td class="print-hidden">-</td>
+            </tr>
+            <tr class="calc-row">
+                <td><span class="print-only-chk"></span><input type="checkbox" class="calc-chk chk-ypea-rain" checked onchange="calcAll()"></td>
+                <td><input type="text" value="Supply Pump Area"></td>
+                <td><input type="number" class="val-ypea-w" value="8400" oninput="calcAll()"></td>
+                <td><input type="number" class="val-ypea-l" value="2700" oninput="calcAll()"></td>
+                <td><span class="readonly-calc result-ypea-area">0.0</span></td>
+                <td class="print-hidden">-</td>
+            </tr>
+        </tbody>
+    </table>
+    <button class="btn-add print-hidden" onclick="addYpeaRainRow()">➕ 강우 구역 항목 추가하기</button>
+    
+    <div class="basis-box">
+        <div class="basis-title">📐 설계 근거 및 산출 과정</div>
+        <div class="basis-content">
+            <div class="basis-lbl">적용 근거:</div><div>KDS 61 00 00 최대강우강도 우수 유입량 산정</div>
+        </div>
+        <div class="calc-formula">
+            <span style="color:#64748b;">V_rain = ∑ Area(m²) × Precipitation(mm/hr) × (1 hr / 1000)</span><br>
+            V = <span id="f_ypeaAreaTotal">0.0</span> × <span id="f_ypeaPrecip">102</span> ÷ 1000
+        </div>
+        <div class="calc-result-line">
+            산출 발생량: <span id="ypeaRainResult" class="result-val">0.00</span> m³ 
+            <span id="ypeaShelterText" style="color:var(--accent); font-weight:bold; font-size:14px; margin-left:10px;"></span>
+        </div>
+    </div>
+
+    <!-- 복구된 2.2 YPEA 탱크로리 -->
+    <h3>2.2 탱크로리 트렌치 수용량 (Tank Lorry Trench Capacity)</h3>
+    <div class="form-grid">
+        <div class="form-group">
+            <label class="form-label">표준 규격 선택</label>
+            <select id="ypeaLorryType" onchange="updateLorry('ypeaLorryType', 'ypeaLorryCap')">
+                <option value="10">10 톤 (10 m³) - 소형 차량</option>
+                <option value="20" selected>20 톤 (20 m³) - 표준 차량</option>
+                <option value="24">24 톤 (24 m³) - 대형 차량</option>
+                <option value="custom">직접 입력 (Custom)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">차량 용량 (Capacity)</label>
+            <div class="input-with-unit">
+                <input type="number" id="ypeaLorryCap" value="20" oninput="calcAll()" readonly style="background:#f1f5f9;"><span class="unit-label">m³</span>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">트렌치 수용 설계 비율</label>
+            <div class="input-with-unit">
+                <input type="number" id="ypeaLorryRatio" value="25" oninput="calcAll()"><span class="unit-label">%</span>
+            </div>
+        </div>
+    </div>
+    <div class="basis-box">
+        <div class="basis-title">📐 설계 근거 및 산출 과정</div>
+        <div class="basis-content">
+            <div class="basis-lbl">적용 근거:</div><div>KOSHA D-35-2017 참고 (유출 초기 확산 방지 및 Sump 유도 목적의 발주처 Design Basis 적용)</div>
+        </div>
+        <div class="calc-formula">
+            <span style="color:#64748b;">V_trench = Lorry Capacity(m³) × Ratio(%)</span><br>
+            V = <span id="f_ypeaLorryCap">20.00</span> × 0.<span id="f_ypeaLorryRatio">25</span>
+        </div>
+        <div class="calc-result-line">
+            트렌치 설계 수용량: <span id="ypeaLorryResult" class="result-val">0.00</span> m³
+        </div>
+    </div>
+
+    <!-- 복구된 2.3 YPEA 비상 샤워기 -->
+    <h3>2.3 비상 샤워기 작동 발생량 (Safety Shower & Eye Washer)</h3>
+    <div class="form-grid">
+        <div class="form-group">
+            <label class="form-label">Safety Shower 유량 <span id="warn_sFlow2" class="badge-warning">⚠️ Min 75.7 미달</span></label>
+            <div class="input-with-unit"><input type="number" id="ypeaShowerFlow" value="80.0" oninput="calcAll()"><span class="unit-label">L/min</span></div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Eye Washer 유량 <span id="warn_eFlow2" class="badge-warning">⚠️ Min 1.5 미달</span></label>
+            <div class="input-with-unit"><input type="number" id="ypeaEyeFlow" value="1.5" oninput="calcAll()"><span class="unit-label">L/min</span></div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">설치 수량</label>
+            <div class="input-with-unit"><input type="number" id="ypeaSafetyQty" value="1" oninput="calcAll()"><span class="unit-label">EA</span></div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">가동 시간 설정 <span id="warn_time2" class="badge-warning">⚠️ Min 15분 미달</span></label>
+            <div class="input-with-unit"><input type="number" id="ypeaSafetyTime" value="30" oninput="calcAll()"><span class="unit-label">min</span></div>
+        </div>
+    </div>
+    <div class="basis-box">
+        <div class="basis-title">📐 설계 근거 및 산출 과정</div>
+        <div class="basis-content">
+            <div class="basis-lbl">적용 근거:</div><div>ANSI/ISEA Z358.1 & KOSHA W-1-2019 규격 충족 확인 (경고 기능 작동)</div>
+        </div>
+        <div class="calc-formula">
+            <span style="color:#64748b;">V_shower = [ (Shower Flow + Eye Flow) × Qty × Time ] / 1000</span><br>
+            V = [ (<span id="f_ypeaSFlow">80.0</span> + <span id="f_ypeaEFlow">1.5</span>) × <span id="f_ypeaSQty">1</span> × <span id="f_ypeaSTime">30</span> ] ÷ 1000
+        </div>
+        <div class="calc-result-line">
+            비상샤워 폐수 발생량: <span id="ypeaSafetyResult" class="result-val">0.00</span> m³
+        </div>
+    </div>
+
+
+    <!-- 복구된 3. VAPORIZER & AFCU AREA -->
+    <h2 style="margin-top: 60px;">3. VAPORIZER & AFCU AREA
+        <label class="shelter-toggle" style="font-size:13px; margin:0; padding:5px 10px;">
+            <span class="print-only-chk" id="p_vapShelterCheck"></span>
+            <input type="checkbox" id="vapShelterCheck" onchange="calcAll()" class="calc-chk"> 
+            Shelter (지붕) 적용
+        </label>
+    </h2>
+
+    <h3>3.1 강우량에 의한 발생량 (Rainfall Volume)</h3>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 8%;">적용</th>
+                <th style="width: 32%;">구분 (Area)</th>
+                <th style="width: 15%;">가로 (mm)</th>
+                <th style="width: 15%;">세로 (mm)</th>
+                <th style="width: 22%;">산출 면적 (m²)</th>
+                <th style="width: 8%;" class="print-hidden">관리</th>
+            </tr>
+        </thead>
+        <tbody id="tbody_vap_rain">
+            <tr class="calc-row">
+                <td><span class="print-only-chk"></span><input type="checkbox" class="calc-chk chk-vap-rain" checked onchange="calcAll()"></td>
+                <td><input type="text" value="Vaporizer Area"></td>
+                <td><input type="number" class="val-vap-w" value="5000" oninput="calcAll()"></td>
+                <td><input type="number" class="val-vap-l" value="4000" oninput="calcAll()"></td>
+                <td><span class="readonly-calc result-vap-area">0.0</span></td>
+                <td class="print-hidden">-</td>
+            </tr>
+            <tr class="calc-row">
+                <td><span class="print-only-chk"></span><input type="checkbox" class="calc-chk chk-vap-rain" checked onchange="calcAll()"></td>
+                <td><input type="text" value="AFCU Area"></td>
+                <td><input type="number" class="val-vap-w" value="4500" oninput="calcAll()"></td>
+                <td><input type="number" class="val-vap-l" value="3500" oninput="calcAll()"></td>
+                <td><span class="readonly-calc result-vap-area">0.0</span></td>
+                <td class="print-hidden">-</td>
+            </tr>
+        </tbody>
+    </table>
+    <button class="btn-add print-hidden" onclick="addVapRainRow()">➕ 강우 구역 항목 추가하기</button>
+    
+    <div class="basis-box">
+        <div class="basis-title">📐 설계 근거 및 산출 과정</div>
+        <div class="basis-content">
+            <div class="basis-lbl">적용 근거:</div><div>KDS 61 00 00 최대강우강도 우수 유입량 산정</div>
+        </div>
+        <div class="calc-formula">
+            <span style="color:#64748b;">V_rain = ∑ Area(m²) × Precipitation(mm/hr) × (1 hr / 1000)</span><br>
+            V = <span id="f_vapAreaTotal">0.0</span> × <span id="f_vapPrecip">102</span> ÷ 1000
+        </div>
+        <div class="calc-result-line">
+            산출 발생량: <span id="vapRainResult" class="result-val">0.00</span> m³ 
+            <span id="vapShelterText" style="color:var(--accent); font-weight:bold; font-size:14px; margin-left:10px;"></span>
+        </div>
+    </div>
+
+    <h3>3.2 비상 샤워기 작동 발생량 (Safety Shower & Eye Washer)</h3>
+    <div class="form-grid">
+        <div class="form-group">
+            <label class="form-label">Safety Shower 유량 <span id="warn_sFlow3" class="badge-warning">⚠️ Min 75.7 미달</span></label>
+            <div class="input-with-unit"><input type="number" id="vapShowerFlow" value="80.0" oninput="calcAll()"><span class="unit-label">L/min</span></div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Eye Washer 유량 <span id="warn_eFlow3" class="badge-warning">⚠️ Min 1.5 미달</span></label>
+            <div class="input-with-unit"><input type="number" id="vapEyeFlow" value="1.5" oninput="calcAll()"><span class="unit-label">L/min</span></div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">설치 수량</label>
+            <div class="input-with-unit"><input type="number" id="vapSafetyQty" value="1" oninput="calcAll()"><span class="unit-label">EA</span></div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">가동 시간 설정 <span id="warn_time3" class="badge-warning">⚠️ Min 15분 미달</span></label>
+            <div class="input-with-unit"><input type="number" id="vapSafetyTime" value="30" oninput="calcAll()"><span class="unit-label">min</span></div>
+        </div>
+    </div>
+    <div class="basis-box">
+        <div class="basis-title">📐 설계 근거 및 산출 과정</div>
+        <div class="basis-content">
+            <div class="basis-lbl">적용 근거:</div><div>ANSI/ISEA Z358.1 & KOSHA W-1-2019 규격 충족 확인 (경고 기능 작동)</div>
+        </div>
+        <div class="calc-formula">
+            <span style="color:#64748b;">V_shower = [ (Shower Flow + Eye Flow) × Qty × Time ] / 1000</span><br>
+            V = [ (<span id="f_vapSFlow">80.0</span> + <span id="f_vapEFlow">1.5</span>) × <span id="f_vapSQty">1</span> × <span id="f_vapSTime">30</span> ] ÷ 1000
+        </div>
+        <div class="calc-result-line">
+            비상샤워 폐수 발생량: <span id="vapSafetyResult" class="result-val">0.00</span> m³
+        </div>
+    </div>
+
+    <!-- 4. 요약 섹션 복구 및 확장 -->
+    <h2 style="margin-top: 60px;">4. REPORT SUMMARY (최종 산출 요약)</h2>
+    
+    <div class="summary-box">
+        <div class="summary-row">
+            <div><strong>1. Ammonia Storage Area 합산</strong>
+                <div style="font-size:13px; color:#cbd5e1; margin-top:5px; font-weight:normal;">
+                    우수(<span id="c_ammRain">0.0</span>) + 살수(<span id="c_ammSpray">0.0</span>) + 암모니아TK(<span id="c_ammTk">0.0</span>) + 희석TK(<span id="c_ammDil">0.0</span>) + 트렌치(<span id="c_ammLorry">0.0</span>) + 샤워(<span id="c_ammShower">0.0</span>)
+                </div>
+            </div>
+            <div><span id="finalAmmValue">0.00</span> m³</div>
+        </div>
+        
+        <div class="summary-row">
+            <div><strong>2. YPEA Storage Area 합산</strong>
+                <div style="font-size:13px; color:#cbd5e1; margin-top:5px; font-weight:normal;">
+                    우수(<span id="c_ypeaRainTable">0.0</span>) + 트렌치(<span id="c_ypeaLorry">0.0</span>) + 샤워(<span id="c_ypeaShower">0.0</span>)
+                </div>
+            </div>
+            <div><span id="finalYpeaValue">0.00</span> m³</div>
+        </div>
+
+        <div class="summary-row">
+            <div><strong>3. Vaporizer & AFCU Area 합산</strong>
+                <div style="font-size:13px; color:#cbd5e1; margin-top:5px; font-weight:normal;">
+                    우수(<span id="c_vapRainTable">0.0</span>) + 샤워(<span id="c_vapShower">0.0</span>)
+                </div>
+            </div>
+            <div><span id="finalVapValue">0.00</span> m³</div>
+        </div>
+        
+        <div class="summary-row">
+            <div><strong>TOTAL WASTEWATER GENERATION (총 발생량 합계)</strong></div>
+            <div><span id="grandTotalValue">0.00</span> m³</div>
+        </div>
+    </div>
+    
+    <!-- Appendix (부록) -->
+    <div class="basis-box" style="border-left-color: #334155; margin-top: 40px; page-break-before: always; background-color: #ffffff;">
+        <h2 style="background-color: #334155; color: white; margin-top: 0;">[참고사항] 엔지니어링 계산서 부록 (Appendix)</h2>
+        
+        <h3 style="color:#334155;">1. Calculation User Guide (계산서 사용 가이드)</h3>
+        <ul style="padding-left: 20px; color:#475569; font-size:14px; margin-bottom: 20px; line-height:1.7;">
+            <li><strong>강우량(Rainfall Volume):</strong> 기상청 확정 지역별 최대 강우 강도(mm/hr)와 집수 구역 면적(m²)을 적용하여 폐수 발생량을 산정합니다. 지붕(Shelter)이 있는 구역은 우수 유입을 배제할 수 있습니다.</li>
+            <li><strong>비상 살수 및 샤워:</strong> 화재나 누출 등의 비상 상황을 대비한 소화수 살수 유량 및 비상 샤워기 사용 유량을 기준 가동 시간(일반적으로 30분)에 맞게 곱하여 발생량을 산출합니다.</li>
+            <li><strong>정비 시 Drain:</strong> 정기 보수(Turnaround) 시 탱크 내부의 화학 물질을 최저 수위(LL)까지 비울 경우 발생하는 1회성 최대 폐수 배출량을 산출합니다.</li>
+        </ul>
+
+        <h3 style="color:#334155;">2. Theoretical Background & Engineering Principles (이론적 배경 및 공학적 원리)</h3>
+        <ul style="padding-left: 20px; color:#475569; font-size:14px; margin-bottom: 20px; line-height:1.7;">
+            <li><strong>보수적 수분지 산정 (Worst-case Water Balance):</strong> 특정 구역에서 강우, 비상 살수 장비 작동, 그리고 정비 목적의 드레인이 동시에 발생할 가능성을 최대화(Worst-case)하여 폐수처리장의 요구 처리 용량을 안전율 있게 산출합니다.</li>
+            <li><strong>강우 유출 계수:</strong> 콘크리트 포장 구역의 경우 침투율이 없다고 가정(유출 계수 C=1.0)하여 강우량 전량이 폐수 집수정으로 향한다고 보수적으로 가정합니다.</li>
+        </ul>
+
+        <h3 style="color:#334155;">3. Source Literature & Reference Bibliography (참고 문헌 및 참조)</h3>
+        <ul style="padding-left: 20px; color:#475569; font-size:14px; line-height:1.7;">
+            <li><strong>KDS 61 00 00:</strong> 하수도설계기준 (SECTION 4.1 계획우수량 산정 기준)</li>
+            <li><strong>KOSHA P-102-2012:</strong> 화학공장의 소방설비 설치에 관한 기술지침 (PARA. 5.1 소화수량 계산)</li>
+            <li><strong>ANSI/ISEA Z358.1 & KOSHA W-1-2019:</strong> 비상샤워기 및 세안설비 설치 지침 (SECTION 4.1 & PARA. 5.2 요구 유량 및 시간)</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    // --- 탱크로리 규격 연동 ---
+    function updateLorry(selectId, inputId) {
+        const selectEl = document.getElementById(selectId);
+        const inputEl = document.getElementById(inputId);
+        if (selectEl.value === 'custom') {
+            inputEl.readOnly = false;
+            inputEl.style.background = '#fff';
+            inputEl.value = "";
+            inputEl.focus();
+        } else {
+            inputEl.readOnly = true;
+            inputEl.style.background = '#f1f5f9';
+            inputEl.value = selectEl.value;
+        }
+        calcAll();
+    }
+
+    // --- 경고 뱃지 토글 ---
+    function checkWarning(id, condition) {
+        const el = document.getElementById(id);
+        if(el) el.style.display = condition ? 'inline-block' : 'none';
+    }
+
+    // --- 탱크 시각화 스케치 로직 ---
+    function drawTankSketch(prefix) {
+        const max = parseFloat(document.getElementById(prefix + 'MaxL').value) || 0;
+        const ll = parseFloat(document.getElementById(prefix + 'LL').value) || 0;
+        const displayTotal = max * 1.2; 
+        
+        let llPct = displayTotal > 0 ? (ll / displayTotal) * 100 : 0;
+        let drainPct = displayTotal > 0 ? ((max - ll) / displayTotal) * 100 : 0;
+        let maxPct = displayTotal > 0 ? (max / displayTotal) * 100 : 0;
+
+        if (llPct > 100) llPct = 100;
+        if (drainPct < 0) drainPct = 0;
+        
+        const llEl = document.getElementById(prefix + 'VisLL');
+        const drainEl = document.getElementById(prefix + 'VisDrain');
+        const maxEl = document.getElementById(prefix + 'VisMax');
+        const drainTxt = document.getElementById(prefix + 'VisDrainTxt');
+
+        if(llEl) { llEl.style.height = llPct + '%'; }
+        if(drainEl) { 
+            drainEl.style.height = drainPct + '%'; 
+            drainEl.style.bottom = llPct + '%'; 
+            if(drainTxt) drainTxt.innerText = (max - ll) + "mm";
+        }
+        if(maxEl) {
+            maxEl.style.bottom = maxPct + '%';
+        }
+    }
+
+    // --- 메인 계산 엔진 ---
+    function calcAll() {
+        document.querySelectorAll('.calc-chk').forEach(chk => {
+            const pSpan = chk.parentElement.querySelector('.print-only-chk');
+            if(pSpan) pSpan.innerText = chk.checked ? '☑ ' : '☐ ';
+        });
+
+        const precip = parseFloat(document.getElementById('maxPrecip').value) || 0;
+
+        // ==========================================
+        // 1. AMMONIA AREA 계산
+        // ==========================================
+        const ammW = parseFloat(document.getElementById('ammRainW').value) || 0;
+        const ammL = parseFloat(document.getElementById('ammRainL').value) || 0;
+        const ammArea = (ammW * ammL) / 1000000;
+        document.getElementById('f_ammArea').innerText = ammArea.toFixed(1);
+        document.getElementById('f_ammArea_sub').innerText = ammArea.toFixed(1);
+        document.getElementById('f_ammPrecip').innerText = precip;
+        
+        let ammRain = 0;
+        if(document.getElementById('ammShelterCheck').checked) {
+            document.getElementById('ammShelterText').innerText = "[Shelter 지붕 적용 - 우수 배제]";
+        } else {
+            ammRain = (ammArea * precip) / 1000;
+            document.getElementById('ammShelterText').innerText = "";
+        }
+        document.getElementById('ammRainResult').innerText = ammRain.toFixed(2);
+
+        let spraySum = 0;
+        document.querySelectorAll('#tbody_spray .calc-row').forEach(row => {
+            const isChecked = row.querySelector('.chk-spray').checked;
+            const flow = parseFloat(row.querySelector('.val-spray-flow').value) || 0;
+            const half = flow * 0.5;
+            
+            if(isChecked) {
+                row.querySelector('.result-spray-half').innerText = half.toFixed(2);
+                spraySum += half;
+            } else {
+                row.querySelector('.result-spray-half').innerText = "0.00";
+            }
+        });
+        document.getElementById('sprayTotal').innerText = spraySum.toFixed(2);
+
+        // 암모니아 탱크 드레인
+        const tkDia = parseFloat(document.getElementById('tkDia').value) || 0;
+        const tkMax = parseFloat(document.getElementById('tkMaxL').value) || 0;
+        const tkLL = parseFloat(document.getElementById('tkLL').value) || 0;
+        const radius = (tkDia / 2) / 1000;
+        const height = (tkMax - tkLL) / 1000;
+        const tkDrain = (height > 0 && radius > 0) ? Math.PI * Math.pow(radius, 2) * height : 0;
+        document.getElementById('f_tkRadius').innerText = radius.toFixed(2);
+        document.getElementById('f_tkHeight').innerText = height.toFixed(2);
+        document.getElementById('tkDrainResult').innerText = tkDrain.toFixed(2);
+        drawTankSketch('tk');
+
+        // 희석 탱크 드레인 (복구)
+        const dilDia = parseFloat(document.getElementById('dilDia').value) || 0;
+        const dilMax = parseFloat(document.getElementById('dilMaxL').value) || 0;
+        const dilLL = parseFloat(document.getElementById('dilLL').value) || 0;
+        const dilRadius = (dilDia / 2) / 1000;
+        const dilHeight = (dilMax - dilLL) / 1000;
+        const dilDrain = (dilHeight > 0 && dilRadius > 0) ? Math.PI * Math.pow(dilRadius, 2) * dilHeight : 0;
+        document.getElementById('f_dilRadius').innerText = dilRadius.toFixed(2);
+        document.getElementById('f_dilHeight').innerText = dilHeight.toFixed(2);
+        document.getElementById('dilDrainResult').innerText = dilDrain.toFixed(2);
+        drawTankSketch('dil');
+
+        // 암모니아 탱크로리
+        const lorryCap = parseFloat(document.getElementById('lorryCap').value) || 0;
+        const lorryRatio = parseFloat(document.getElementById('lorryRatio').value) || 0;
+        const lorryVol = lorryCap * (lorryRatio / 100);
+        document.getElementById('f_lorryCap').innerText = lorryCap.toFixed(2);
+        document.getElementById('f_lorryRatio').innerText = lorryRatio;
+        document.getElementById('lorryResult').innerText = lorryVol.toFixed(2);
+
+        // 암모니아 샤워
+        const sFlow = parseFloat(document.getElementById('showerFlow').value) || 0;
+        const eFlow = parseFloat(document.getElementById('eyeFlow').value) || 0;
+        const sQty = parseFloat(document.getElementById('safetyQty').value) || 1;
+        const sTime = parseFloat(document.getElementById('safetyTime').value) || 0;
+        checkWarning('warn_sFlow1', sFlow < 75.7);
+        checkWarning('warn_eFlow1', eFlow < 1.5);
+        checkWarning('warn_time1', sTime < 15);
+        const showerVol = ((sFlow + eFlow) * sQty * sTime) / 1000;
+        document.getElementById('f_sFlow1').innerText = sFlow.toFixed(1);
+        document.getElementById('f_eFlow1').innerText = eFlow.toFixed(1);
+        document.getElementById('f_sQty1').innerText = sQty;
+        document.getElementById('f_sTime1').innerText = sTime;
+        document.getElementById('safetyTotalResult').innerText = showerVol.toFixed(2);
+
+        const totalAmm = ammRain + spraySum + tkDrain + dilDrain + lorryVol + showerVol;
+
+        // ==========================================
+        // 2. YPEA AREA 계산 (복구)
+        // ==========================================
+        let ypeaArea = 0;
+        document.querySelectorAll('#tbody_ypea_rain .calc-row').forEach(row => {
+            const isChecked = row.querySelector('.chk-ypea-rain').checked;
+            const w = parseFloat(row.querySelector('.val-ypea-w').value) || 0;
+            const l = parseFloat(row.querySelector('.val-ypea-l').value) || 0;
+            const a = (w * l) / 1000000;
+            row.querySelector('.result-ypea-area').innerText = a.toFixed(1);
+            if(isChecked) ypeaArea += a;
+        });
+        document.getElementById('f_ypeaAreaTotal').innerText = ypeaArea.toFixed(1);
+        document.getElementById('f_ypeaPrecip').innerText = precip;
+
+        let ypeaRain = 0;
+        if(document.getElementById('ypeaShelterCheck').checked) {
+            document.getElementById('ypeaShelterText').innerText = "[Shelter 지붕 적용 - 우수 배제]";
+        } else {
+            ypeaRain = (ypeaArea * precip) / 1000;
+            document.getElementById('ypeaShelterText').innerText = "";
+        }
+        document.getElementById('ypeaRainResult').innerText = ypeaRain.toFixed(2);
+        
+        // YPEA 탱크로리
+        const ypeaLorryCap = parseFloat(document.getElementById('ypeaLorryCap').value) || 0;
+        const ypeaLorryRatio = parseFloat(document.getElementById('ypeaLorryRatio').value) || 0;
+        const ypeaLorryVol = ypeaLorryCap * (ypeaLorryRatio / 100);
+        document.getElementById('f_ypeaLorryCap').innerText = ypeaLorryCap.toFixed(2);
+        document.getElementById('f_ypeaLorryRatio').innerText = ypeaLorryRatio;
+        document.getElementById('ypeaLorryResult').innerText = ypeaLorryVol.toFixed(2);
+
+        // YPEA 비상샤워기
+        const y_sFlow = parseFloat(document.getElementById('ypeaShowerFlow').value) || 0;
+        const y_eFlow = parseFloat(document.getElementById('ypeaEyeFlow').value) || 0;
+        const y_sQty = parseFloat(document.getElementById('ypeaSafetyQty').value) || 1;
+        const y_sTime = parseFloat(document.getElementById('ypeaSafetyTime').value) || 0;
+        checkWarning('warn_sFlow2', y_sFlow < 75.7);
+        checkWarning('warn_eFlow2', y_eFlow < 1.5);
+        checkWarning('warn_time2', y_sTime < 15);
+        const ypeaShowerVol = ((y_sFlow + y_eFlow) * y_sQty * y_sTime) / 1000;
+        document.getElementById('f_ypeaSFlow').innerText = y_sFlow.toFixed(1);
+        document.getElementById('f_ypeaEFlow').innerText = y_eFlow.toFixed(1);
+        document.getElementById('f_ypeaSQty').innerText = y_sQty;
+        document.getElementById('f_ypeaSTime').innerText = y_sTime;
+        document.getElementById('ypeaSafetyResult').innerText = ypeaShowerVol.toFixed(2);
+
+        const totalYpea = ypeaRain + ypeaLorryVol + ypeaShowerVol;
+
+        // ==========================================
+        // 3. VAPORIZER & AFCU AREA 계산 (복구)
+        // ==========================================
+        let vapArea = 0;
+        document.querySelectorAll('#tbody_vap_rain .calc-row').forEach(row => {
+            const isChecked = row.querySelector('.chk-vap-rain').checked;
+            const w = parseFloat(row.querySelector('.val-vap-w').value) || 0;
+            const l = parseFloat(row.querySelector('.val-vap-l').value) || 0;
+            const a = (w * l) / 1000000;
+            row.querySelector('.result-vap-area').innerText = a.toFixed(1);
+            if(isChecked) vapArea += a;
+        });
+        document.getElementById('f_vapAreaTotal').innerText = vapArea.toFixed(1);
+        document.getElementById('f_vapPrecip').innerText = precip;
+
+        let vapRain = 0;
+        if(document.getElementById('vapShelterCheck').checked) {
+            document.getElementById('vapShelterText').innerText = "[Shelter 지붕 적용 - 우수 배제]";
+        } else {
+            vapRain = (vapArea * precip) / 1000;
+            document.getElementById('vapShelterText').innerText = "";
+        }
+        document.getElementById('vapRainResult').innerText = vapRain.toFixed(2);
+        
+        // VAP 비상샤워기
+        const v_sFlow = parseFloat(document.getElementById('vapShowerFlow').value) || 0;
+        const v_eFlow = parseFloat(document.getElementById('vapEyeFlow').value) || 0;
+        const v_sQty = parseFloat(document.getElementById('vapSafetyQty').value) || 1;
+        const v_sTime = parseFloat(document.getElementById('vapSafetyTime').value) || 0;
+        checkWarning('warn_sFlow3', v_sFlow < 75.7);
+        checkWarning('warn_eFlow3', v_eFlow < 1.5);
+        checkWarning('warn_time3', v_sTime < 15);
+        const vapShowerVol = ((v_sFlow + v_eFlow) * v_sQty * v_sTime) / 1000;
+        document.getElementById('f_vapSFlow').innerText = v_sFlow.toFixed(1);
+        document.getElementById('f_vapEFlow').innerText = v_eFlow.toFixed(1);
+        document.getElementById('f_vapSQty').innerText = v_sQty;
+        document.getElementById('f_vapSTime').innerText = v_sTime;
+        document.getElementById('vapSafetyResult').innerText = vapShowerVol.toFixed(2);
+
+        const totalVap = vapRain + vapShowerVol;
+
+        // ==========================================
+        // 4. 요약 업데이트 (복구)
+        // ==========================================
+        document.getElementById('c_ammRain').innerText = ammRain.toFixed(2);
+        document.getElementById('c_ammSpray').innerText = spraySum.toFixed(2);
+        document.getElementById('c_ammTk').innerText = tkDrain.toFixed(2);
+        document.getElementById('c_ammDil').innerText = dilDrain.toFixed(2); // 희석탱크
+        document.getElementById('c_ammLorry').innerText = lorryVol.toFixed(2);
+        document.getElementById('c_ammShower').innerText = showerVol.toFixed(2);
+        document.getElementById('finalAmmValue').innerText = totalAmm.toFixed(2);
+
+        document.getElementById('c_ypeaRainTable').innerText = ypeaRain.toFixed(2);
+        document.getElementById('c_ypeaLorry').innerText = ypeaLorryVol.toFixed(2); 
+        document.getElementById('c_ypeaShower').innerText = ypeaShowerVol.toFixed(2); 
+        document.getElementById('finalYpeaValue').innerText = totalYpea.toFixed(2);
+
+        document.getElementById('c_vapRainTable').innerText = vapRain.toFixed(2);
+        document.getElementById('c_vapShower').innerText = vapShowerVol.toFixed(2); 
+        document.getElementById('finalVapValue').innerText = totalVap.toFixed(2);
+
+        const grandTotal = totalAmm + totalYpea + totalVap;
+        document.getElementById('grandTotalValue').innerText = grandTotal.toFixed(2);
+    }
+
+    // --- 동적 행 추가 / 삭제 기능 ---
+    function addSprayRow() {
+        const tbody = document.getElementById('tbody_spray');
+        const tr = document.createElement('tr');
+        tr.className = 'calc-row';
+        tr.innerHTML = `
+            <td><span class="print-only-chk"></span><input type="checkbox" class="calc-chk chk-spray" checked onchange="calcAll()"></td>
+            <td><input type="text" value="신규 설비 명칭"></td>
+            <td><input type="number" class="val-spray-flow" value="0.00" oninput="calcAll()"></td>
+            <td><span class="readonly-calc result-spray-half">0.00</span></td>
+            <td class="print-hidden"><button type="button" class="btn-remove" onclick="removeRow(this)">삭제</button></td>
+        `;
+        tbody.appendChild(tr);
+        calcAll();
+    }
+
+    function addYpeaRainRow() {
+        const tbody = document.getElementById('tbody_ypea_rain');
+        const tr = document.createElement('tr');
+        tr.className = 'calc-row';
+        tr.innerHTML = `
+            <td><span class="print-only-chk"></span><input type="checkbox" class="calc-chk chk-ypea-rain" checked onchange="calcAll()"></td>
+            <td><input type="text" value="신규 구역 명칭"></td>
+            <td><input type="number" class="val-ypea-w" value="0" oninput="calcAll()"></td>
+            <td><input type="number" class="val-ypea-l" value="0" oninput="calcAll()"></td>
+            <td><span class="readonly-calc result-ypea-area">0.0</span></td>
+            <td class="print-hidden"><button type="button" class="btn-remove" onclick="removeRow(this)">삭제</button></td>
+        `;
+        tbody.appendChild(tr);
+        calcAll();
+    }
+    
+    function addVapRainRow() {
+        const tbody = document.getElementById('tbody_vap_rain');
+        const tr = document.createElement('tr');
+        tr.className = 'calc-row';
+        tr.innerHTML = `
+            <td><span class="print-only-chk"></span><input type="checkbox" class="calc-chk chk-vap-rain" checked onchange="calcAll()"></td>
+            <td><input type="text" value="신규 구역 명칭"></td>
+            <td><input type="number" class="val-vap-w" value="0" oninput="calcAll()"></td>
+            <td><input type="number" class="val-vap-l" value="0" oninput="calcAll()"></td>
+            <td><span class="readonly-calc result-vap-area">0.0</span></td>
+            <td class="print-hidden"><button type="button" class="btn-remove" onclick="removeRow(this)">삭제</button></td>
+        `;
+        tbody.appendChild(tr);
+        calcAll();
+    }
+
+    function removeRow(btn) {
+        btn.closest('tr').remove();
+        calcAll();
+    }
+
+    // 초기화
+    window.onload = function() {
+        calcAll();
+    };
+</script>
+
+</body>
+</html>

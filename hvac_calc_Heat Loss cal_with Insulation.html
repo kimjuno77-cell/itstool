@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -16,6 +16,7 @@
             .print-card { border: 1px solid #e2e8f0 !important; box-shadow: none !important; }
             .bg-slate-800 { background-color: white !important; color: black !important; border: 1px solid #ddd; }
             .text-blue-400, .text-emerald-400 { color: black !important; }
+            .print-break { page-break-before: always; break-before: page; }
         }
         input[type="number"]::-webkit-inner-spin-button,
         input[type="number"]::-webkit-outer-spin-button {
@@ -272,9 +273,10 @@
                                                 <IconInfo /> HVAC Load Parameters
                                             </div>
                                             <ul className="space-y-1.5 list-disc pl-3">
-                                                <li><strong>E-glass 보온:</strong> 표면 열방출의 75% 차단($\times 0.25$ 계수)</li>
-                                                <li><strong>모터 손실:</strong> 비효율($1-\eta$)에 따른 현열 발생량 반영</li>
+                                                <li><strong>E-glass 보온:</strong> 표면 열방출의 75% 차단(× 0.25 계수)</li>
+                                                <li><strong>모터 손실:</strong> 비효율(1-η)에 따른 현열 발생량 반영</li>
                                                 <li><strong>단위 변환:</strong> 1 W = 0.86 kcal/h 기준</li>
+                                                <li className="mt-2 text-[10px] text-slate-400" style={{listStyleType: 'none', marginLeft: '-12px'}}>※ KDS 31 20 20, SECTION 4.1 / ASHRAE SECTION 18.2 적용</li>
                                             </ul>
                                         </div>
                                         <button onClick={() => window.print()} className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all mt-4 no-print shadow-lg shadow-blue-900/20">
@@ -284,6 +286,32 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div className="mt-12 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 print-break text-slate-700">
+                            <h2 className="text-xl font-bold text-slate-900 mb-4 pb-2 border-b-2 border-slate-800">[참고사항] 엔지니어링 계산서 부록 (Appendix)</h2>
+                            
+                            <h3 className="font-bold text-slate-800 mb-2 mt-4">1. Calculation User Guide (계산서 사용 가이드)</h3>
+                            <ul className="list-disc pl-6 space-y-2 mb-4 text-sm">
+                                <li><strong>항목 추가:</strong> 상단의 버튼(모터, 판넬, 조명, 인체, 기타)을 클릭하여 HVAC 계산 부하를 추가합니다.</li>
+                                <li><strong>모터 보온 적용:</strong> E-glass 등의 보온 처리를 한 모터의 경우, '보온(E-glass)' 버튼을 클릭하여 열손실 계수(0.25)를 반영할 수 있습니다.</li>
+                                <li><strong>설치 조건(발열 범위):</strong> 모터와 구동 기기의 실내/실외 위치에 따라 실내(공조 공간)로 방출되는 현열 부하량이 자동으로 조정됩니다.</li>
+                            </ul>
+
+                            <h3 className="font-bold text-slate-800 mb-2 mt-4">2. Theoretical Background & Engineering Principles (이론적 배경 및 공학적 원리)</h3>
+                            <ul className="list-disc pl-6 space-y-2 mb-4 text-sm">
+                                <li><strong>전동기 부하 (Motor Load):</strong> 효율(η)에 따라 잃어버리는 전력이 열로 변환되는 원리 적용. 모터 전체 부하 시 (P/η), 모터 단독 손실 시 P × (1-η)/η 를 적용합니다.</li>
+                                <li><strong>조명 및 인체 부하 (Lighting & People Load):</strong> 조명 면적당 부하(W/m²) 및 1인당 발열량(W/인)을 기반으로 실내 열취득량을 합산합니다.</li>
+                                <li><strong>열량 환산:</strong> 전기/기계 단위인 W(J/s)를 열량 단위인 kcal/h로 변환(1 W = 0.86 kcal/h)하여 공조기(AHU) 용량 산정에 활용합니다.</li>
+                            </ul>
+
+                            <h3 className="font-bold text-slate-800 mb-2 mt-4">3. Source Literature & Reference Bibliography (참고 문헌 및 참조)</h3>
+                            <ul className="list-disc pl-6 space-y-2 text-sm">
+                                <li><strong>ASHRAE Handbook - Fundamentals:</strong> SECTION 18.2 (Nonresidential Cooling and Heating Load Calculations - Heat Gain from Equipment, Lighting, and People)</li>
+                                <li><strong>KDS 31 20 20:</strong> 건축기계설비 냉난방부하 계산기준 (SECTION 4.1, PARA. 4.1.2 기기 및 조명부하 산정)</li>
+                                <li><strong>IEEE 841:</strong> Standard for Petroleum and Chemical Industry—Premium-Efficiency, Severe-Duty, Totally Enclosed Fan-Cooled (TEFC) Squirrel Cage Induction Motors</li>
+                            </ul>
+                        </div>
+
                     </div>
                 </div>
             );
