@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sump Pit & Sump Pump Capacity Calculation Sheet</title>
+    <!-- SheetJS CDN for Excel Download & Upload -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #1a365d;
+            --primary-light: #2b6cb0;
+            --accent: #319795;
+            --bg-main: #f7fafc;
+            --card-bg: #ffffff;
+            --border: #e2e8f0;
+            --text-dark: #2d3748;
+            --text-muted: #718096;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-dark);
+            line-height: 1.35;
+            padding: 16px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .sheet-header-card {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .sheet-header-card h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            letter-spacing: -0.3px;
+        }
+
+        .sheet-header-card p {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            line-height: 1.25;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            background: white;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .card-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid var(--bg-main);
+            padding-bottom: 6px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 12px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .form-group label {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .sub-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-weight: normal;
+        }
+
+        input[type="number"], input[type="text"] {
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            font-size: 0.85rem;
+            outline: none;
+            width: 100%;
+            transition: all 0.2s ease;
+        }
+
+        input::placeholder {
+            color: #a0aec0;
+            font-style: italic;
+        }
+
+        input[type="number"]:focus, input[type="text"]:focus {
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 2px rgba(43, 108, 176, 0.2);
+        }
+
+        .input-ok { border-color: #48bb78 !important; background-color: #f0fff4 !important; }
+        .input-ng { border-color: #f56565 !important; background-color: #fff5f5 !important; }
+        
+        .status-text { font-size: 0.65rem; font-weight: bold; margin-top: 2px; }
+        .status-ok { color: #276749; }
+        .status-ng { color: #c53030; }
+
+        .table-responsive { overflow-x: auto; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 6px;
+            font-size: 0.82rem;
+        }
+
+        th {
+            background-color: #edf2f7;
+            color: var(--primary);
+            text-align: left;
+            padding: 8px 6px;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 6px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        .btn {
+            padding: 6px 14px;
+            border-radius: 5px;
+            font-weight: 600;
+            font-size: 0.82rem;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary { background-color: var(--primary-light); color: white; }
+        .btn-primary:hover { background-color: var(--primary); }
+        .btn-excel { background-color: #276749; color: white; }
+        .btn-excel:hover { background-color: #1c4532; }
+        .btn-pdf { background-color: #c53030; color: white; }
+        .btn-pdf:hover { background-color: #9b2c2c; }
+        .btn-danger { background-color: #e53e3e; color: white; padding: 3px 6px; font-size: 0.72rem; }
+        .btn-outline { background-color: transparent; border: 1px solid var(--primary-light); color: var(--primary-light); }
+
+        .guide-card {
+            background: #ebf8ff;
+            border-left: 4px solid var(--primary-light);
+            border-color: #90cdf4;
+        }
+
+        .guide-content { font-size: 0.82rem; color: #2a4365; }
+
+        .calculated-val { background-color: #f7fafc; font-weight: 600; color: var(--primary); }
+
+        .area-group-card {
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--primary-light);
+            border-radius: 8px;
+            background: #fafbfc;
+            padding: 14px;
+            margin-bottom: 16px;
+        }
+
+        .area-group-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+
+        .area-group-title-input {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--primary);
+            border: none;
+            border-bottom: 2px solid var(--border);
+            border-radius: 0;
+            background: transparent;
+            padding: 2px 4px;
+            width: 280px;
+        }
+
+        .results-section {
+            background: #f0f4f8;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .results-section h4 {
+            color: var(--primary);
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 3px;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 8px;
+        }
+
+        .result-box {
+            background: white;
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--primary-light);
+            border-radius: 5px;
+            padding: 8px;
+        }
+
+        .result-box.highlight { border-left-color: var(--accent); background: #f0fdf4; }
+
+        .result-box .label { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 2px; font-weight: 600; }
+        .result-box .value { font-size: 1.05rem; font-weight: 700; color: var(--primary); }
+        .result-box .subtext { font-size: 0.68rem; color: var(--text-muted); margin-top: 2px; }
+
+        .calc-details-box {
+            background: white; 
+            border: 1px solid var(--border); 
+            border-radius: 5px; 
+            padding: 10px 12px; 
+            font-size: 0.75rem; 
+            color: #4a5568; 
+            line-height: 1.5;
+            margin-top: 6px;
+        }
+        .calc-details-box strong { color: var(--primary-light); }
+
+        .selected-capacity-box {
+            grid-column: span 2;
+            background: #fefcbf;
+            border: 1px solid #ecc94b;
+            border-left: 3px solid #d69e2e;
+            border-radius: 5px;
+            padding: 8px;
+            transition: all 0.3s;
+        }
+
+        footer { text-align: center; color: var(--text-muted); font-size: 0.75rem; margin-top: 20px; padding-bottom: 10px; }
+
+        @media print {
+            @page { size: A4 portrait; margin: 8mm; }
+            body { background: white; color: black; padding: 0; font-size: 7.5pt; line-height: 1.25; }
+            .container { max-width: 100%; }
+            .toolbar, button, .btn, input[type="file"], .btn-danger, .hide-on-print { display: none !important; }
+            .sheet-header-card { background: #1a365d !important; color: white !important; padding: 10px 14px !important; border-radius: 4px; margin-bottom: 10px !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .sheet-header-card h1 { font-size: 1.1rem !important; margin-bottom: 2px !important; }
+            .card { padding: 8px 10px; margin-bottom: 8px; border: 1px solid #cbd5e0; box-shadow: none; page-break-inside: avoid; }
+            .area-group-card { padding: 8px 10px; margin-bottom: 8px; page-break-inside: avoid; border: 1px solid #cbd5e0; border-left: 3px solid #2b6cb0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            input[type="number"], input[type="text"] { border: none; border-bottom: 1px solid #a0aec0; padding: 1px 2px; font-size: 7.5pt; background: transparent; }
+            th, td { padding: 3px 4px; font-size: 7pt; }
+            .results-section { padding: 6px; margin-top: 6px; background: #f7fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; page-break-inside: avoid; }
+            .result-box .value { font-size: 0.88rem; }
+            .calc-details-box { padding: 6px; font-size: 7pt; page-break-inside: avoid; border: 1px solid #cbd5e0; }
+            .selected-capacity-box { background: #fffbea !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <table style="width:100%; border-collapse:collapse; border:none;">
+        <thead>
+            <tr>
+                <td style="border:none; padding:0;">
+                    <div class="sheet-header-card">
+                        <h1>Sump Pit & Sump Pump Capacity Calculation Sheet</h1>
+                        <p>Environmental Facility Design: Area-based Runoff, Water Spray Flow Rate, Sump Pit Sizing & Pump Capacity Calculation</p>
+                    </div>
+                </td>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="border:none; padding:0;">
+
+                    <div class="toolbar hide-on-print">
+                        <button class="btn btn-pdf" onclick="window.print()">📄 Print to PDF (Report Layout)</button>
+                        <button class="btn btn-excel" onclick="downloadExcelTemplate()">📥 Download Excel Template (.xlsx)</button>
+                        
+                        <label class="btn btn-primary" style="margin-left: auto;">
+                            📤 Upload Excel Data
+                            <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display: none;" onchange="uploadExcelData(event)">
+                        </label>
+                    </div>
+
+                    <div class="card guide-card hide-on-print">
+                        <div class="card-title" style="color: #2b6cb0; border-bottom-color: #90cdf4;">
+                            📖 User Guide & Engineering Basis (사용자 가이드 및 설계 근거)
+                        </div>
+                        <div class="guide-content">
+                            <h4 style="margin-top: 10px; margin-bottom: 4px; color: #1e3a8a; font-size: 0.9rem;">1. 사용자 안내 (How to Use)</h4>
+                            <ul style="padding-left: 20px; margin-bottom: 8px;">
+                                <li style="margin-bottom: 4px;"><strong>Step 1:</strong> 프로젝트 기본 정보와 설계 매개변수(강우강도, 유출계수 등)를 입력합니다. (모든 칸의 초기값은 비어있습니다.)</li>
+                                <li style="margin-bottom: 4px;"><strong>Step 2:</strong> 구역(Major Area Group)을 추가하고 하위 구역(Sub-Section)의 가로/세로 길이 및 소화수(Water Spray) 유량을 입력합니다.</li>
+                                <li style="margin-bottom: 4px;"><strong>Step 3:</strong> 유입량, 집수정 최소 체적, 펌프 및 모터 요구 용량이 자동으로 <strong>공학 기준에 맞춰 검증 및 계산</strong>됩니다. (각 구역 하단의 상세 계산 과정 참고)</li>
+                                <li style="margin-bottom: 4px;"><strong>Step 4:</strong> 계산 결과를 바탕으로 실제 적용할 펌프의 사양(Selected Pump Specification)을 하단 노란색 박스에 기입하면 충족 여부가 즉시 판별됩니다.</li>
+                                <li style="margin-bottom: 4px;"><strong>Step 5:</strong> 상단 버튼을 이용하여 PDF로 출력(보고서 형식)하거나 Excel로 데이터를 내보내기/불러오기 할 수 있습니다.</li>
+                            </ul>
+                            
+                            <h4 style="margin-top: 10px; margin-bottom: 4px; color: #1e3a8a; font-size: 0.9rem;">2. 계산 근거 및 설계 검증 (Calculation Basis & Verification)</h4>
+                            <ul style="padding-left: 20px; margin-bottom: 8px;">
+                                <li style="margin-bottom: 4px;"><strong>우수 유입량 (Rainfall Flow):</strong> 합리식(Rational Method) 적용. Q_rain = (C * I * A) / 1000 [m³/hr] (근거: ASCE Manual of Practice No.77)</li>
+                                <li style="margin-bottom: 4px;"><strong>최대 총 유입량 (Total Inflow Rate):</strong> 우수 유입량과 소화수 유입량의 동시 발생을 가정한 최대 유량. Q_total = Q_rain + Q_spray [m³/hr]</li>
+                                <li style="margin-bottom: 4px;"><strong>집수정 체적 (Sump Pit Volume):</strong> 1시간 우수 유입량과 30분 소화수 유입량을 합산하여 산정. V_pit = (Q_rain * 1 hr) + (Q_spray * 0.5 hr) [m³] (충분한 체류시간 및 기동/정지 방지)</li>
+                                <li style="margin-bottom: 4px;"><strong>펌프 용량 (Pump Capacity):</strong> 산정된 집수정 체적(V_pit)을 1시간 이내에 배출할 수 있도록 설계. Q_design = (V_pit / 1 hr) * Safety Factor 적용. (통상 1.1 ~ 1.2 적용)</li>
+                                <li style="margin-bottom: 4px;"><strong>모터 동력 (Motor Power):</strong> P = (Q_design * H * 9.81) / (3600 * Efficiency) [kW]. 여기에 API 610 / ISO 13709 기준에 따라 <strong>모터 정격 여유율(Motor Margin) 15% (1.15)</strong>를 가산함.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">
+                            1. Design Parameter
+                        </div>
+                        
+                        <div class="grid-2" style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed var(--border);">
+                            <div class="form-group">
+                                <label>Project Name</label>
+                                <input type="text" id="projectName" placeholder="Insert data">
+                            </div>
+                            <div class="form-group">
+                                <label>Project Location</label>
+                                <input type="text" id="projectLocation" placeholder="Insert data">
+                            </div>
+                        </div>
+
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label>Maximum Rainfall Intensity (I)</label>
+                                <input type="number" id="rainfallIntensity" placeholder="Insert data" min="0" step="1" oninput="calculateAll()">
+                                <span class="sub-label">Unit: mm/hr (Global design criteria value based on regional return period)</span>
+                            </div>
+                            <div class="form-group">
+                                <label>Runoff Coefficient (C)</label>
+                                <input type="number" id="runoffCoeff" value="0.90" placeholder="Insert data" min="0" max="1" step="0.05" oninput="calculateAll()">
+                                <span class="sub-label">Note: According to ASCE / WEF Guidelines, C = 0.85 ~ 0.95 for heavy industrial paved areas.</span>
+                            </div>
+                            <div class="form-group">
+                                <label>Safety Factor (S.F.)</label>
+                                <input type="number" id="safetyFactor" value="1.20" placeholder="Insert data" min="1" step="0.05" oninput="calculateAll()">
+                                <span class="sub-label">Design margin factor for Sump Pump capacity sizing</span>
+                            </div>
+                            <div class="form-group">
+                                <label>Estimated Pump Total Head & Efficiency</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="number" id="pumpHead" placeholder="Insert data" oninput="calculateAll()">
+                                    <input type="number" id="pumpEff" placeholder="Insert data" oninput="calculateAll()">
+                                </div>
+                                <span class="sub-label">Note: Total Dynamic Head (TDH 10~20m). Efficiency = 60~70%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">
+                            2. Major Area Groups & Section Configuration
+                            <button class="btn btn-outline" onclick="addAreaGroup()">+ Add Major Area Group</button>
+                        </div>
+                        
+                        <div id="areaGroupsContainer">
+                        </div>
+                    </div>
+
+                    <footer>
+                        Environmental Plant Engineering Calculation Sheet | Sump Pit & Pump Capacity Tool
+                    </footer>
+
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    let groupCounter = 0;
+
+    const initialGroups = [
+        { title: "", selectedPumpFlow: "", selectedPumpPower: "", sections: [ { name: "", width: "", length: "", sprayRate: "" }, { name: "", width: "", length: "", sprayRate: "" } ] },
+        { title: "", selectedPumpFlow: "", selectedPumpPower: "", sections: [ { name: "", width: "", length: "", sprayRate: "" }, { name: "", width: "", length: "", sprayRate: "" } ] }
+    ];
+
+    window.onload = function() {
+        initialGroups.forEach(grp => {
+            addAreaGroup(grp.title, grp.sections, grp.selectedPumpFlow, grp.selectedPumpPower);
+        });
+        calculateAll();
+    };
+
+    function showMessage(title, message, type="info") {
+        const modal = document.createElement("div");
+        modal.style.position = "fixed"; modal.style.top = "0"; modal.style.left = "0"; modal.style.width = "100%"; modal.style.height = "100%";
+        modal.style.backgroundColor = "rgba(0,0,0,0.5)"; modal.style.display = "flex";
+        modal.style.alignItems = "center"; modal.style.justifyContent = "center"; modal.style.zIndex = "9999";
+        let titleColor = type === "error" ? "#c53030" : (type === "success" ? "#276749" : "#2b6cb0");
+        modal.innerHTML = `
+            <div style="background: white; padding: 24px; border-radius: 8px; max-width: 400px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                <h3 style="color: ${titleColor}; margin-bottom: 12px; font-size: 1.1rem;">${title}</h3>
+                <p style="margin-bottom: 16px; font-size: 0.9rem; color: #4a5568; line-height: 1.4;">${message}</p>
+                <button onclick="this.parentElement.parentElement.remove()" style="background-color: #e2e8f0; color: #2d3748; padding: 6px 16px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold;">확인 (OK)</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    function addAreaGroup(title = "", sections = [], selFlow = "", selPower = "") {
+        groupCounter++;
+        const container = document.getElementById("areaGroupsContainer");
+        const groupCard = document.createElement("div");
+        groupCard.className = "area-group-card";
+        groupCard.id = `group-${groupCounter}`;
+
+        const displayTitle = title || `Major Area Group ${groupCounter}`;
+
+        groupCard.innerHTML = `
+            <div class="area-group-header">
+                <div>
+                    <span style="font-size:0.72rem; font-weight:bold; color:var(--primary-light);">MAJOR AREA</span>
+                    <br>
+                    <input type="text" class="area-group-title-input" value="${title}" placeholder="Insert data">
+                </div>
+                <div class="hide-on-print">
+                    <button class="btn btn-outline" style="padding: 3px 8px; margin-right:4px;" onclick="addSectionRow(${groupCounter})">+ Add Sub-Section</button>
+                    <button class="btn btn-danger" onclick="removeAreaGroup('group-${groupCounter}')">Remove Area Group</button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 24%;">Sub-Section Name</th>
+                            <th style="width: 12%;">Width (m)</th>
+                            <th style="width: 12%;">Length (m)</th>
+                            <th style="width: 14%;">Area (m²)</th>
+                            <th style="width: 18%;">Water Spray Rate<br><small>(m³/hr, Input)</small></th>
+                            <th style="width: 14%;">Water Spray (30m)<br><small>(m³/30min, Calc)</small></th>
+                            <th class="hide-on-print" style="width: 6%;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-group-${groupCounter}">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="results-section">
+                <h4>Calculation Summary & Sizing — <span class="group-title-label">${displayTitle}</span></h4>
+                
+                <p style="font-size:0.72rem; font-weight:bold; color:var(--primary-light); margin-top:4px; margin-bottom:3px;">[1] Flow Rates</p>
+                <div class="results-grid">
+                    <div class="result-box">
+                        <div class="label">Total Area</div>
+                        <div class="value res-total-area">0.00 <small style="font-size:0.7rem">m²</small></div>
+                    </div>
+                    <div class="result-box">
+                        <div class="label">Hourly Rainfall Flow</div>
+                        <div class="value res-rain-flow">0.00 <small style="font-size:0.7rem">m³/hr</small></div>
+                        <div class="subtext res-rain-30min">30-min Intake: 0.00 m³</div>
+                    </div>
+                    <div class="result-box">
+                        <div class="label">Hourly Water Spray Flow</div>
+                        <div class="value res-spray-flow">0.00 <small style="font-size:0.7rem">m³/hr</small></div>
+                        <div class="subtext res-spray-30min">30-min Volume: 0.00 m³</div>
+                    </div>
+                    <div class="result-box highlight">
+                        <div class="label">Max Hourly Total Inflow</div>
+                        <div class="value res-total-inflow">0.00 <small style="font-size:0.7rem">m³/hr</small></div>
+                        <div class="subtext">Q_rain + Q_spray</div>
+                    </div>
+                </div>
+
+                <p style="font-size:0.72rem; font-weight:bold; color:var(--primary-light); margin-top:8px; margin-bottom:3px;">[2] Sump Pit Sizing</p>
+                <div class="results-grid">
+                    <div class="result-box highlight">
+                        <div class="label">Min. Effective Volume</div>
+                        <div class="value res-pit-vol">0.00 <small style="font-size:0.7rem">m³</small></div>
+                        <div class="subtext">1hr Rain + 30m Spray</div>
+                    </div>
+                    <div class="result-box">
+                        <div class="label">Recommended Pit Dimension</div>
+                        <div class="value res-pit-dim" style="font-size: 0.88rem; padding-top: 2px;">-</div>
+                        <div class="subtext">Width x Length x Eff. Depth (2.0m)</div>
+                    </div>
+                </div>
+
+                <p style="font-size:0.72rem; font-weight:bold; color:var(--primary-light); margin-top:8px; margin-bottom:3px;">[3] Sump Pump Sizing & Selected Specification</p>
+                <div class="results-grid">
+                    <div class="result-box">
+                        <div class="label">Pump Minimum Capacity</div>
+                        <div class="value res-pump-min-cap">0.00 <small style="font-size:0.7rem">m³/hr</small></div>
+                        <div class="subtext">1 Hour Discharge of V_pit</div>
+                    </div>
+                    <div class="result-box highlight">
+                        <div class="label">Design Flow Rate (with S.F.)</div>
+                        <div class="value res-pump-design-flow">0.00 <small style="font-size:0.7rem">m³/hr</small></div>
+                        <div class="subtext res-pump-lmin">0.0 L/min</div>
+                    </div>
+                    <div class="result-box highlight">
+                        <div class="label">Min. Electric Motor Power</div>
+                        <div class="value res-pump-kw">0.00 <small style="font-size:0.7rem">kW</small></div>
+                        <div class="subtext res-pump-hp">0.0 HP</div>
+                    </div>
+                    
+                    <div class="selected-capacity-box">
+                        <div class="label" style="color: #744210; display: flex; justify-content: space-between; align-items: center;">
+                            <span>SELECTED PUMP SPECIFICATION (USER INPUT)</span>
+                            <span class="spec-overall-status"></span>
+                        </div>
+                        <div style="display: flex; gap: 8px; margin-top: 3px;">
+                            <div style="flex:1;">
+                                <label style="font-size:0.65rem; font-weight:bold; color:#744210;">Selected Capacity (m³/hr)</label>
+                                <input type="number" class="sel-pump-flow" value="${selFlow}" placeholder="Insert data" oninput="calculateAll()">
+                                <div class="flow-status status-text"></div>
+                            </div>
+                            <div style="flex:1;">
+                                <label style="font-size:0.65rem; font-weight:bold; color:#744210;">Selected Motor Power (kW)</label>
+                                <input type="number" class="sel-pump-power" value="${selPower}" placeholder="Insert data" oninput="calculateAll()">
+                                <div class="power-status status-text"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <p style="font-size:0.72rem; font-weight:bold; color:var(--primary-light); margin-top:12px; margin-bottom:3px;">[4] Detailed Calculation Process & Design Criteria</p>
+                <div class="calc-details-box">
+                    <div style="margin-bottom: 6px;"><strong>1. Rainfall Flow (ASCE Manual of Practice No.77 - Rational Method):</strong> 
+                        <br> <span class="calc-step-rain" style="font-family: monospace; font-size: 0.78rem;">-</span>
+                    </div>
+                    <div style="margin-bottom: 6px;"><strong>2. Total Maximum Hourly Inflow:</strong> 
+                        <br> <span class="calc-step-total" style="font-family: monospace; font-size: 0.78rem;">-</span>
+                    </div>
+                    <div style="margin-bottom: 6px;"><strong>3. Sump Pit Sizing & Storage Time:</strong> 
+                        <br> <span class="calc-step-pit" style="font-family: monospace; font-size: 0.78rem; display: inline-block; margin-top: 2px;">-</span>
+                    </div>
+                    <div style="margin-bottom: 6px;"><strong>4. Pump Design Capacity & Drain Time:</strong> 
+                        <br> <span class="calc-step-pump" style="font-family: monospace; font-size: 0.78rem; display: inline-block; margin-top: 2px;">-</span>
+                    </div>
+                    <!-- 5번 항목 문구 변경 및 Note 추가 -->
+                    <div><strong>5. Theoretical Min. Motor Power (Reference):</strong> 
+                        <br> <span class="calc-step-motor" style="font-family: monospace; font-size: 0.78rem;">-</span>
+                        <br> <span style="font-style: italic; font-size: 0.72rem; color: var(--text-muted); display: inline-block; margin-top: 3px;">Note : Actual Maker selection will be higher due to standard motor frame sizes</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        container.appendChild(groupCard);
+
+        const titleInput = groupCard.querySelector('.area-group-title-input');
+        const titleLabel = groupCard.querySelector('.group-title-label');
+        titleInput.addEventListener('input', () => {
+            titleLabel.textContent = titleInput.value || `Major Area Group ${groupCounter}`;
+        });
+
+        if (sections && sections.length > 0) {
+            sections.forEach(sec => addSectionRow(groupCounter, sec.name, sec.width, sec.length, sec.sprayRate));
+        } else {
+            addSectionRow(groupCounter, "", "", "", "");
+            addSectionRow(groupCounter, "", "", "", "");
+        }
+    }
+
+    function removeAreaGroup(groupId) {
+        const group = document.getElementById(groupId);
+        if (group) { group.remove(); calculateAll(); }
+    }
+
+    function addSectionRow(groupId, name = "", width = "", length = "", sprayRate = "") {
+        const tbody = document.getElementById(`tbody-group-${groupId}`);
+        if (!tbody) return;
+
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+            <td><input type="text" value="${name}" placeholder="Insert data" class="sec-name" style="padding: 3px 6px;"></td>
+            <td><input type="number" value="${width}" placeholder="Insert data" min="0" step="0.1" class="sec-width" oninput="updateRowCalculations(this)"></td>
+            <td><input type="number" value="${length}" placeholder="Insert data" min="0" step="0.1" class="sec-length" oninput="updateRowCalculations(this)"></td>
+            <td class="calculated-val sec-area">0.00</td>
+            <td><input type="number" value="${sprayRate}" placeholder="Insert data" min="0" step="1" class="sec-spray-rate" oninput="updateRowCalculations(this)"></td>
+            <td class="calculated-val sec-spray-30">0.00</td>
+            <td class="hide-on-print"><button class="btn btn-danger" onclick="removeSectionRow(this)">Delete</button></td>
+        `;
+
+        tbody.appendChild(tr);
+        updateRowCalculations(tr.querySelector('.sec-width'));
+    }
+
+    function removeSectionRow(btn) {
+        const row = btn.closest('tr');
+        if (row) { row.remove(); calculateAll(); }
+    }
+
+    function safeParse(val) {
+        if (val === undefined || val === null || val === "") return 0;
+        const num = parseFloat(val);
+        return isNaN(num) ? 0 : num;
+    }
+
+    function updateRowCalculations(element) {
+        if (!element) return;
+        const row = element.closest('tr');
+        if (!row) return;
+
+        const width = safeParse(row.querySelector('.sec-width').value);
+        const length = safeParse(row.querySelector('.sec-length').value);
+        const sprayRate = safeParse(row.querySelector('.sec-spray-rate').value);
+
+        const area = width * length;
+        const spray30min = sprayRate * 0.5;
+
+        const areaCell = row.querySelector('.sec-area');
+        if (areaCell) areaCell.textContent = area.toFixed(2);
+        
+        const sprayCell = row.querySelector('.sec-spray-30');
+        if (sprayCell) sprayCell.textContent = spray30min.toFixed(2);
+
+        setTimeout(() => calculateAll(), 10);
+    }
+
+    function calculateAll() {
+        try {
+            const getVal = (id) => {
+                const el = document.getElementById(id);
+                return el ? safeParse(el.value) : 0;
+            };
+
+            const I = getVal('rainfallIntensity');
+            const C = getVal('runoffCoeff') || 0; 
+            const rawSF = getVal('safetyFactor');
+            const SF = rawSF > 0 ? rawSF : 1.0; 
+            const head = getVal('pumpHead');
+            
+            const effEl = document.getElementById('pumpEff');
+            let eff = 0.6; // 빈값일 경우 임시 60% 적용
+            if (effEl && effEl.value !== "") {
+                const parsedEff = parseFloat(effEl.value);
+                if (!isNaN(parsedEff) && parsedEff > 0) eff = parsedEff / 100;
+            }
+
+            const groups = document.querySelectorAll('.area-group-card');
+
+            groups.forEach(group => {
+                let groupArea = 0;
+                let groupSprayRateHr = 0;
+
+                const rows = group.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const widthEl = row.querySelector('.sec-width');
+                    const lengthEl = row.querySelector('.sec-length');
+                    const sprayEl = row.querySelector('.sec-spray-rate');
+
+                    const w = widthEl ? safeParse(widthEl.value) : 0;
+                    const l = lengthEl ? safeParse(lengthEl.value) : 0;
+                    const s = sprayEl ? safeParse(sprayEl.value) : 0;
+
+                    groupArea += (w * l);
+                    groupSprayRateHr += s;
+                });
+
+                // 1. Rainfall Flow & Spray Flow
+                const rainFlowHr = (C * I * groupArea) / 1000;
+                const rainFlow30min = rainFlowHr * 0.5;
+                const sprayFlow30min = groupSprayRateHr * 0.5; 
+
+                // 2. Maximum Total Inflow
+                const totalInflowHr = rainFlowHr + groupSprayRateHr;
+                const flowPerMin = totalInflowHr / 60; 
+                
+                // 3. Sump Pit Sizing (1시간 우수 + 30분 소화수)
+                const pitVolumeMin = (rainFlowHr * 1.0) + (groupSprayRateHr * 0.5); 
+                const targetDepth = 2.0;
+                const requiredArea = pitVolumeMin / targetDepth;
+                const sideLength = requiredArea > 0 ? Math.sqrt(requiredArea) : 0;
+                const pitDimText = `${sideLength.toFixed(1)}m(W) x ${sideLength.toFixed(1)}m(L) x ${targetDepth.toFixed(1)}m(D)`;
+
+                // 4. Pump Capacity (V_pit 1시간 배출 기준)
+                const pumpMinCap = pitVolumeMin / 1.0; 
+                const pumpDesignFlow = pumpMinCap * SF;
+                const pumpLmin = (pumpDesignFlow * 1000) / 60;
+
+                // 5. Pump Power Calculation
+                const waterPowerKw = (pumpDesignFlow > 0 && eff > 0) ? (pumpDesignFlow * head * 9.81) / (3600 * eff) : 0;
+                const motorKw = waterPowerKw * 1.15; // 15% Motor Margin
+                const motorHp = motorKw * 1.34102;
+
+                // --- Update Summary Results UI ---
+                const safeUpdate = (selector, val, unit) => {
+                    const el = group.querySelector(selector);
+                    if (el && !isNaN(val)) el.innerHTML = `${val.toFixed(2)} <small style="font-size:0.7rem">${unit}</small>`;
+                };
+
+                safeUpdate('.res-total-area', groupArea, 'm²');
+                safeUpdate('.res-rain-flow', rainFlowHr, 'm³/hr');
+                
+                const rain30El = group.querySelector('.res-rain-30min');
+                if (rain30El) rain30El.textContent = `30-min Intake: ${rainFlow30min.toFixed(2)} m³`;
+
+                safeUpdate('.res-spray-flow', groupSprayRateHr, 'm³/hr');
+                
+                const spray30El = group.querySelector('.res-spray-30min');
+                if (spray30El) spray30El.textContent = `30-min Volume: ${sprayFlow30min.toFixed(2)} m³`;
+
+                safeUpdate('.res-total-inflow', totalInflowHr, 'm³/hr');
+                safeUpdate('.res-pit-vol', pitVolumeMin, 'm³');
+                
+                const pitDimEl = group.querySelector('.res-pit-dim');
+                if (pitDimEl) pitDimEl.textContent = pitDimText;
+
+                safeUpdate('.res-pump-min-cap', pumpMinCap, 'm³/hr');
+                safeUpdate('.res-pump-design-flow', pumpDesignFlow, 'm³/hr');
+                
+                const pumpLminEl = group.querySelector('.res-pump-lmin');
+                if (pumpLminEl) pumpLminEl.textContent = `S.F. ${SF.toFixed(2)} Applied: ${pumpLmin.toFixed(1)} L/min`;
+
+                safeUpdate('.res-pump-kw', motorKw, 'kW');
+                const pumpHpEl = group.querySelector('.res-pump-hp');
+                if (pumpHpEl) pumpHpEl.textContent = `Motor Rating: ${motorKw.toFixed(2)} kW (${motorHp.toFixed(1)} HP)`;
+
+                // --- Update Detailed Calculation Process Texts ---
+                const calcRainEl = group.querySelector('.calc-step-rain');
+                if (calcRainEl) {
+                    calcRainEl.innerHTML = `Q_rain = (C * I * A) / 1000 = (${C.toFixed(2)} * ${I.toFixed(0)} * ${groupArea.toFixed(2)}) / 1000 = <span style="color:var(--primary); font-weight:bold;">${rainFlowHr.toFixed(2)} m³/hr</span>`;
+                }
+
+                const calcTotalEl = group.querySelector('.calc-step-total');
+                if (calcTotalEl) {
+                    calcTotalEl.innerHTML = `Q_total = Q_rain + Q_spray = ${rainFlowHr.toFixed(2)} + ${groupSprayRateHr.toFixed(2)} = <span style="color:var(--primary); font-weight:bold;">${totalInflowHr.toFixed(2)} m³/hr</span>`;
+                }
+
+                const calcPitEl = group.querySelector('.calc-step-pit');
+                if (calcPitEl) {
+                    const storageTime = (flowPerMin > 0) ? (pitVolumeMin / flowPerMin) : 0;
+                    calcPitEl.innerHTML = `V_pit = (Q_rain * 1 hr) + (Q_spray * 0.5 hr) = (${rainFlowHr.toFixed(2)} * 1) + (${groupSprayRateHr.toFixed(2)} * 0.5) = <span style="color:var(--primary); font-weight:bold;">${pitVolumeMin.toFixed(2)} m³</span><br>` +
+                                          `Storage Time = V_pit / (Q_total / 60) = ${pitVolumeMin.toFixed(2)} / ${flowPerMin.toFixed(2)} = <span style="color:var(--primary); font-weight:bold;">${storageTime.toFixed(1)} min &gt; 30 min</span>`;
+                }
+
+                const calcPumpEl = group.querySelector('.calc-step-pump');
+                if (calcPumpEl) {
+                    const drainTime = (pumpDesignFlow > 0) ? (pitVolumeMin / pumpDesignFlow) : 0;
+                    calcPumpEl.innerHTML = `Q_design = (V_pit / 1 hr) * S.F. = (${pitVolumeMin.toFixed(2)} / 1) * ${SF.toFixed(2)} = <span style="color:var(--primary); font-weight:bold;">${pumpDesignFlow.toFixed(2)} m³/hr</span><br>` +
+                                           `Drain Time = V_pit / Q_design = ${pitVolumeMin.toFixed(2)} / ${pumpDesignFlow.toFixed(2)} = <span style="color:var(--primary); font-weight:bold;">${drainTime.toFixed(2)} hr &lt; 1 hr</span>`;
+                }
+
+                const calcMotorEl = group.querySelector('.calc-step-motor');
+                if (calcMotorEl) {
+                    const displayedEff = (effEl && effEl.value !== "") ? (parseFloat(effEl.value) / 100).toFixed(2) : "0.65";
+                    calcMotorEl.innerHTML = `P_motor = [(Q_design * H * 9.81) / (3600 * Eff)] * 1.15 = [(${pumpDesignFlow.toFixed(2)} * ${head.toFixed(0)} * 9.81) / (3600 * ${displayedEff})] * 1.15 = <span style="color:var(--primary); font-weight:bold;">${motorKw.toFixed(2)} kW</span>`;
+                }
+
+                // --- Visual Validation for Inputs ---
+                const selFlowInput = group.querySelector('.sel-pump-flow');
+                const selPowerInput = group.querySelector('.sel-pump-power');
+                const flowStatusEl = group.querySelector('.flow-status');
+                const powerStatusEl = group.querySelector('.power-status');
+                const overallStatusEl = group.querySelector('.spec-overall-status');
+
+                if (selFlowInput && selPowerInput) {
+                    const selFlow = parseFloat(selFlowInput.value);
+                    const selPower = parseFloat(selPowerInput.value);
+
+                    let isFlowValid = false, isPowerValid = false;
+
+                    if (!isNaN(selFlow) && selFlow > 0) {
+                        isFlowValid = selFlow >= pumpDesignFlow;
+                        if (isFlowValid) {
+                            flowStatusEl.textContent = "✔️ Satisfied"; flowStatusEl.className = "flow-status status-text status-ok";
+                            selFlowInput.classList.add('input-ok'); selFlowInput.classList.remove('input-ng');
+                        } else {
+                            flowStatusEl.textContent = `❌ Short (Need ≥ ${pumpDesignFlow.toFixed(1)})`; flowStatusEl.className = "flow-status status-text status-ng";
+                            selFlowInput.classList.add('input-ng'); selFlowInput.classList.remove('input-ok');
+                        }
+                    } else {
+                        flowStatusEl.textContent = ""; selFlowInput.classList.remove('input-ok', 'input-ng');
+                    }
+
+                    if (!isNaN(selPower) && selPower > 0) {
+                        isPowerValid = selPower >= motorKw;
+                        if (isPowerValid) {
+                            powerStatusEl.textContent = "✔️ Satisfied"; powerStatusEl.className = "power-status status-text status-ok";
+                            selPowerInput.classList.add('input-ok'); selPowerInput.classList.remove('input-ng');
+                        } else {
+                            powerStatusEl.textContent = `❌ Short (Need ≥ ${motorKw.toFixed(1)})`; powerStatusEl.className = "power-status status-text status-ng";
+                            selPowerInput.classList.add('input-ng'); selPowerInput.classList.remove('input-ok');
+                        }
+                    } else {
+                        powerStatusEl.textContent = ""; selPowerInput.classList.remove('input-ok', 'input-ng');
+                    }
+
+                    if (!isNaN(selFlow) && selFlow > 0 && !isNaN(selPower) && selPower > 0) {
+                        if (isFlowValid && isPowerValid) {
+                            overallStatusEl.innerHTML = `<span style="background: #48bb78; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: bold;">OK - ACCEPTABLE</span>`;
+                        } else {
+                            overallStatusEl.innerHTML = `<span style="background: #e53e3e; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: bold;">NG - UNACCEPTABLE</span>`;
+                        }
+                    } else { overallStatusEl.innerHTML = ""; }
+                }
+            });
+        } catch (err) {
+            console.error("Calculation Framework Error:", err);
+        }
+    }
+
+    function downloadExcelTemplate() {
+        try {
+            if (typeof XLSX === 'undefined') {
+                showMessage("Library Error", "Excel library is not loaded. Please check your internet connection.", "error");
+                return;
+            }
+            const wb = XLSX.utils.book_new();
+            const getVal = (id, fallback) => { const el = document.getElementById(id); return el && el.value ? el.value : fallback; };
+
+            const globalData = [
+                ["Parameter Name", "Value", "Unit / Description"],
+                ["Project Name", getVal('projectName', ""), "Text"],
+                ["Project Location", getVal('projectLocation', ""), "Text"],
+                ["Rainfall Intensity (I)", parseFloat(getVal('rainfallIntensity', 80)) || 80, "mm/hr"],
+                ["Runoff Coefficient (C)", parseFloat(getVal('runoffCoeff', 0.90)) || 0.90, "0.85 ~ 0.95"],
+                ["Safety Factor (S.F.)", parseFloat(getVal('safetyFactor', 1.20)) || 1.20, "Margin factor"],
+                ["Pump Head", parseFloat(getVal('pumpHead', 15)) || 15, "meters"],
+                ["Pump Efficiency", parseFloat(getVal('pumpEff', 65)) || 65, "%"]
+            ];
+            
+            const wsGlobal = XLSX.utils.aoa_to_sheet(globalData);
+            XLSX.utils.book_append_sheet(wb, wsGlobal, "Design_Parameters");
+
+            const sectionData = [
+                ["Major Area Group Title", "Sub-Section Name", "Width (m)", "Length (m)", "Water Spray Rate (m3/hr)", "Selected Pump Flow (m3/hr)", "Selected Pump Power (kW)"]
+            ];
+
+            const groups = document.querySelectorAll('.area-group-card');
+            groups.forEach(group => {
+                const titleInput = group.querySelector('.area-group-title-input');
+                const flowInput = group.querySelector('.sel-pump-flow');
+                const powerInput = group.querySelector('.sel-pump-power');
+
+                const groupTitle = titleInput && titleInput.value ? titleInput.value : `Group`;
+                const selFlow = flowInput ? flowInput.value : "";
+                const selPower = powerInput ? powerInput.value : "";
+
+                const rows = group.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const secNameInput = row.querySelector('.sec-name');
+                    const widthInput = row.querySelector('.sec-width');
+                    const lengthInput = row.querySelector('.sec-length');
+                    const sprayInput = row.querySelector('.sec-spray-rate');
+
+                    const secName = secNameInput && secNameInput.value ? secNameInput.value : "Sub-Zone";
+                    const width = widthInput ? (parseFloat(widthInput.value) || 0) : 0;
+                    const length = lengthInput ? (parseFloat(lengthInput.value) || 0) : 0;
+                    const spray = sprayInput ? (parseFloat(sprayInput.value) || 0) : 0;
+
+                    sectionData.push([groupTitle, secName, width, length, spray, selFlow, selPower]);
+                });
+            });
+
+            const wsSections = XLSX.utils.aoa_to_sheet(sectionData);
+            XLSX.utils.book_append_sheet(wb, wsSections, "Area_Sections");
+
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+            const b64Url = "data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64," + wbout;
+            
+            const fallbackDiv = document.createElement("div");
+            fallbackDiv.id = "sandbox-download-fallback";
+            fallbackDiv.style.position = "fixed"; fallbackDiv.style.top = "0"; fallbackDiv.style.left = "0";
+            fallbackDiv.style.width = "100%"; fallbackDiv.style.height = "100%";
+            fallbackDiv.style.backgroundColor = "rgba(0,0,0,0.6)"; fallbackDiv.style.display = "flex";
+            fallbackDiv.style.alignItems = "center"; fallbackDiv.style.justifyContent = "center"; fallbackDiv.style.zIndex = "99999";
+            
+            fallbackDiv.innerHTML = `
+                <div style="background: white; padding: 24px; border-radius: 8px; max-width: 450px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                    <h3 style="color: #276749; margin-bottom: 12px; font-size: 1.2rem;">📥 엑셀 파일 생성 완료</h3>
+                    <p style="margin-bottom: 20px; font-size: 0.9rem; color: #4a5568; line-height: 1.5; text-align: left;">
+                        보안 환경(미리보기)에서는 브라우저가 자동 다운로드를 제한합니다.<br><br>
+                        아래 버튼을 클릭하여 수동으로 다운로드 하시거나, 우클릭 후 <em>'다른 이름으로 링크 저장'</em>을 선택해 주세요.
+                    </p>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <a href="${b64Url}" download="Sump_Calculation_Input_Format.xlsx" style="background-color: #276749; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 0.9rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📥 다운로드 진행 (Download)</a>
+                        <button onclick="document.getElementById('sandbox-download-fallback').remove()" style="background-color: #e2e8f0; color: #2d3748; padding: 8px 16px; border-radius: 4px; border: 1px solid #cbd5e0; cursor: pointer; font-weight: bold; font-size: 0.9rem;">닫기 (Close)</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(fallbackDiv);
+        } catch (error) {
+            console.error("Excel Generation Error:", error);
+            showMessage("Export Failed", "Error creating Excel file: <br>" + error.message, "error");
+        }
+    }
+
+    function uploadExcelData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        try {
+            if (typeof XLSX === 'undefined') {
+                showMessage("Library Error", "Excel library is not loaded.", "error");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetNames = workbook.SheetNames;
+
+                    const designSheetName = sheetNames.find(s => s.toLowerCase().includes("design"));
+                    const areaSheetName = sheetNames.find(s => s.toLowerCase().includes("area"));
+
+                    if (designSheetName) {
+                        const globalRows = XLSX.utils.sheet_to_json(workbook.Sheets[designSheetName], { header: "A", defval: "" });
+                        for (let i = 1; i < globalRows.length; i++) {
+                            const pName = String(globalRows[i].A || "").toLowerCase();
+                            const pVal = globalRows[i].B;
+
+                            if (pName.includes("project name")) document.getElementById('projectName').value = pVal;
+                            else if (pName.includes("location")) document.getElementById('projectLocation').value = pVal;
+                            else if (pName.includes("rainfall")) document.getElementById('rainfallIntensity').value = pVal;
+                            else if (pName.includes("runoff")) document.getElementById('runoffCoeff').value = pVal;
+                            else if (pName.includes("safety")) document.getElementById('safetyFactor').value = pVal;
+                            else if (pName.includes("head")) document.getElementById('pumpHead').value = pVal;
+                            else if (pName.includes("efficiency")) document.getElementById('pumpEff').value = pVal;
+                        }
+                    }
+
+                    if (areaSheetName) {
+                        const sectionRows = XLSX.utils.sheet_to_json(workbook.Sheets[areaSheetName], { header: 1, defval: "" });
+                        document.getElementById("areaGroupsContainer").innerHTML = ""; 
+                        groupCounter = 0;
+
+                        const groupMap = {};
+                        let lastGroupTitle = `Major Area Group 1`;
+
+                        for (let i = 1; i < sectionRows.length; i++) {
+                            const row = sectionRows[i];
+                            if (!row || row.length === 0) continue; 
+                            if (row.every(cell => String(cell).trim() === "")) continue;
+
+                            if (row[0] !== undefined && String(row[0]).trim() !== "") {
+                                lastGroupTitle = String(row[0]).trim();
+                            }
+                            
+                            const groupTitle = lastGroupTitle;
+                            const secName = row[1] !== undefined ? String(row[1]) : "";
+                            
+                            const cleanExtractNum = (val) => {
+                                if (val === undefined || val === null || val === "") return "";
+                                const parsed = parseFloat(String(val).replace(/,/g, '').trim());
+                                return isNaN(parsed) ? "" : parsed;
+                            };
+
+                            const width = cleanExtractNum(row[2]);
+                            const length = cleanExtractNum(row[3]);
+                            const spray = cleanExtractNum(row[4]);
+                            const selFlow = cleanExtractNum(row[5]);
+                            const selPower = cleanExtractNum(row[6]);
+
+                            if (!groupMap[groupTitle]) {
+                                groupMap[groupTitle] = {
+                                    title: groupTitle,
+                                    selectedPumpFlow: selFlow,
+                                    selectedPumpPower: selPower,
+                                    sections: []
+                                };
+                            }
+                            
+                            groupMap[groupTitle].sections.push({
+                                name: secName, width: width, length: length, sprayRate: spray
+                            });
+                        }
+
+                        Object.values(groupMap).forEach(grp => {
+                            addAreaGroup(grp.title, grp.sections, grp.selectedPumpFlow, grp.selectedPumpPower);
+                        });
+
+                        setTimeout(() => {
+                            calculateAll();
+                            showMessage("Success", "Excel data successfully imported and calculated!", "success");
+                        }, 50);
+                    } else {
+                        showMessage("Format Error", "Could not find Area_Sections sheet in the Excel file.", "error");
+                    }
+                } catch (innerErr) {
+                    console.error("Parsing Error:", innerErr);
+                    showMessage("Processing Error", "An error occurred while rendering the Excel data.", "error");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        } catch (error) {
+            console.error("Upload Error:", error);
+            showMessage("Upload Error", "Error reading Excel file.", "error");
+        }
+        event.target.value = ""; 
+    }
+</script>
+</body>
+</html>
