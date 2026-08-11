@@ -735,27 +735,93 @@
 
         let dilution = "Low";
         let isSafe = false;
+        let finalZoneText = "";
 
-        if (isNE && avail === 'good') {
+        if (isNE) {
             dilution = "High (고희석)";
-            isSafe = true;
-            log += `> 논리: [NE 만족] + [가용성 우수] = 가스 확산 완벽. 비위험 장소 판정.\n`;
-        } else if (isNE && avail === 'fair') {
-            dilution = "Medium (중희석)";
-            isSafe = true; 
-            log += `> 논리: [NE 만족] + [가용성 보통] = 제한적 체류이나 면제 허용치 이내. 비위험 장소 유지.\n`;
-        } else if (isNE && avail === 'poor') {
-            dilution = "Low (저희석)";
-            isSafe = false; 
-            log += `> 논리: [NE 체적 만족] 이라도 [가용성 미흡]으로 인해 잦은 가스 체류 가능성. 저희석 및 방폭 구역 지정.\n`;
+            log += `> 희석 등급 판정: [NE 체적 만족]에 따라 가스 확산이 즉각적으로 이루어지는 'High (고희석)' 조건으로 간주됨 (KS C IEC 60079-10-1 5.4.4.2조 참조).\n`;
+
+            if (gradeValue === 'secondary') {
+                if (avail === 'good' || avail === 'fair') {
+                    isSafe = true;
+                    finalZoneText = "Non-Hazardous Area (Zone 2 NE)";
+                    log += `> 최종 판정 [KS C IEC 60079-10-1 표 D.1 참조]:\n`;
+                    log += `  - 누출 등급: 2차 (Secondary)\n`;
+                    log += `  - 희석 등급: 고희석 (High)\n`;
+                    log += `  - 환기 가용성: ${avail === 'good' ? '우수 (Good)' : '보통 (Fair)'}\n`;
+                    log += `  => 결과: Non-Hazardous Area (Zone 2 NE) 지정 (체적이 무시할 만큼 작으므로 비위험 장소로 분류됨).\n`;
+                } else if (avail === 'poor') {
+                    isSafe = false;
+                    finalZoneText = "폭발위험장소 (Zone 2)";
+                    log += `> 최종 판정 [KS C IEC 60079-10-1 표 D.1 참조]:\n`;
+                    log += `  - 누출 등급: 2차 (Secondary)\n`;
+                    log += `  - 희석 등급: 고희석 (High)\n`;
+                    log += `  - 환기 가용성: 미흡 (Poor)\n`;
+                    log += `  => 결과: 폭발위험장소 Zone 2 지정 (환기 신뢰성 부족으로 가스 체류 위험).\n`;
+                }
+            } else if (gradeValue === 'primary') {
+                if (avail === 'good') {
+                    isSafe = true;
+                    finalZoneText = "Non-Hazardous Area (Zone 1 NE)";
+                    log += `> 최종 판정 [KS C IEC 60079-10-1 표 D.1 참조]:\n`;
+                    log += `  - 누출 등급: 1차 (Primary)\n`;
+                    log += `  - 희석 등급: 고희석 (High)\n`;
+                    log += `  - 환기 가용성: 우수 (Good)\n`;
+                    log += `  => 결과: Non-Hazardous Area (Zone 1 NE) 지정.\n`;
+                } else if (avail === 'fair') {
+                    isSafe = false;
+                    finalZoneText = "폭발위험장소 (Zone 2)";
+                    log += `> 최종 판정 [KS C IEC 60079-10-1 표 D.1 참조]:\n`;
+                    log += `  - 누출 등급: 1차 (Primary)\n`;
+                    log += `  - 희석 등급: 고희석 (High)\n`;
+                    log += `  - 환기 가용성: 보통 (Fair)\n`;
+                    log += `  => 결과: 폭발위험장소 Zone 2 지정.\n`;
+                } else {
+                    isSafe = false;
+                    finalZoneText = "폭발위험장소 (Zone 1)";
+                    log += `> 최종 판정 [KS C IEC 60079-10-1 표 D.1 참조]:\n`;
+                    log += `  - 누출 등급: 1차 (Primary)\n`;
+                    log += `  - 희석 등급: 고희석 (High)\n`;
+                    log += `  - 환기 가용성: 미흡 (Poor)\n`;
+                    log += `  => 결과: 폭발위험장소 Zone 1 지정.\n`;
+                }
+            } else if (gradeValue === 'continuous') {
+                if (avail === 'good') {
+                    isSafe = true;
+                    finalZoneText = "Non-Hazardous Area (Zone 0 NE)";
+                    log += `> 최종 판정 [KS C IEC 60079-10-1 표 D.1 참조]:\n`;
+                    log += `  - 누출 등급: 연속 (Continuous)\n`;
+                    log += `  - 희석 등급: 고희석 (High)\n`;
+                    log += `  - 환기 가용성: 우수 (Good)\n`;
+                    log += `  => 결과: Non-Hazardous Area (Zone 0 NE) 지정.\n`;
+                } else if (avail === 'fair') {
+                    isSafe = false;
+                    finalZoneText = "폭발위험장소 (Zone 1)";
+                    log += `> 최종 판정 [KS C IEC 60079-10-1 표 D.1 참조]:\n`;
+                    log += `  - 누출 등급: 연속 (Continuous)\n`;
+                    log += `  - 희석 등급: 고희석 (High)\n`;
+                    log += `  - 환기 가용성: 보통 (Fair)\n`;
+                    log += `  => 결과: 폭발위험장소 Zone 1 지정.\n`;
+                } else {
+                    isSafe = false;
+                    finalZoneText = "폭발위험장소 (Zone 0)";
+                    log += `> 최종 판정 [KS C IEC 60079-10-1 표 D.1 참조]:\n`;
+                    log += `  - 누출 등급: 연속 (Continuous)\n`;
+                    log += `  - 희석 등급: 고희석 (High)\n`;
+                    log += `  - 환기 가용성: 미흡 (Poor)\n`;
+                    log += `  => 결과: 폭발위험장소 Zone 0 지정.\n`;
+                }
+            }
         } else {
             if (loc === 'outdoor' && (avail === 'good' || avail === 'fair')) {
-                dilution = "Medium/High (자연환기)";
+                dilution = "Medium (중희석)";
                 isSafe = false;
+                finalZoneText = (gradeValue === 'secondary') ? "폭발위험장소 (Zone 2)" : (gradeValue === 'primary' ? "폭발위험장소 (Zone 1 이상)" : "폭발위험장소 (Zone 0)");
                 log += `> 논리: [NE 불만족] 옥외 자연 환기로 가스 희석은 되나, 누출 반경이 커서 설비 반경 국소적 방폭 구역 지정.\n`;
             } else {
                 dilution = "Low (저희석)";
                 isSafe = false;
+                finalZoneText = (gradeValue === 'secondary') ? "폭발위험장소 (Zone 2)" : (gradeValue === 'primary' ? "폭발위험장소 (Zone 1 이상)" : "폭발위험장소 (Zone 0)");
                 log += `> 논리: [NE 불만족] 가스 희석 미달로 인한 방폭 구역 지정.\n`;
             }
         }
@@ -781,15 +847,10 @@
             badgeDilution.style.backgroundColor = "var(--danger)";
         }
 
+        badgeStatus.innerText = finalZoneText;
         if (isSafe) {
-            badgeStatus.innerText = "비위험 장소 (Non-Hazardous Area)";
             badgeStatus.style.backgroundColor = "var(--success)";
         } else {
-            let zoneText = "폭발위험장소 (Zone 2)";
-            if (gradeValue === 'primary' || gradeValue === 'continuous') {
-                zoneText = "폭발위험장소 (Zone 1 이상)";
-            }
-            badgeStatus.innerText = zoneText;
             badgeStatus.style.backgroundColor = "var(--danger)";
         }
 
