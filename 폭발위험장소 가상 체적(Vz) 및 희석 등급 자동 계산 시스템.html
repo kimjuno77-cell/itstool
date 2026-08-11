@@ -410,11 +410,15 @@
             </div>
             <div class="form-group">
                 <label>물질명 (Material) / 요율 (Rate)</label>
-                <select id="material_rate" onchange="runSimulation()">
+                <select id="material_rate" onchange="toggleCustomRate(); runSimulation();">
                     <option value="1.0" selected>기본 (요율 1.0)</option>
                     <option value="0.2">벤젠 (Benzene) - 요율 0.2</option>
                     <option value="0.2">R.A (유사 성상) - 요율 0.2</option>
+                    <option value="custom">사용자 직접 입력</option>
                 </select>
+                <div class="input-group" id="custom_rate_group" style="display:none; margin-top:5px;">
+                    <input type="number" id="custom_rate" value="1.0" step="0.01" oninput="runSimulation()"><span class="unit">요율(Rate)</span>
+                </div>
             </div>
             <div class="form-group">
                 <label>폭발하한계 질량농도 (LEL<sub>m</sub>)</label>
@@ -586,6 +590,16 @@
         }
     }
 
+    function toggleCustomRate() {
+        const rateSelect = document.getElementById('material_rate').value;
+        const customRateGroup = document.getElementById('custom_rate_group');
+        if (rateSelect === 'custom') {
+            customRateGroup.style.display = 'flex';
+        } else {
+            customRateGroup.style.display = 'none';
+        }
+    }
+
     function toggleVentilationInputs() {
         const loc = document.getElementById('location').value;
         const ventMethod = document.getElementById('vent_method').value;
@@ -634,8 +648,16 @@
         const temp = parseFloat(document.getElementById('temp').value) || 0;
         const press_barg = parseFloat(document.getElementById('press').value) || 0;
         const mw = parseFloat(document.getElementById('mw').value) || 1;
-        const materialRate = parseFloat(document.getElementById('material_rate').value) || 1.0;
-        const materialName = document.getElementById('material_rate').options[document.getElementById('material_rate').selectedIndex].text;
+        let materialRate = parseFloat(document.getElementById('material_rate').value);
+        let materialName = document.getElementById('material_rate').options[document.getElementById('material_rate').selectedIndex].text;
+        
+        if (document.getElementById('material_rate').value === 'custom') {
+            materialRate = parseFloat(document.getElementById('custom_rate').value) || 1.0;
+            materialName = "사용자 지정 (" + materialRate + ")";
+        } else {
+            materialRate = materialRate || 1.0;
+        }
+
         const lelm = parseFloat(document.getElementById('lelm').value) || 0.001;
         const avail = document.getElementById('avail').value;
         const f = parseFloat(document.getElementById('f_factor').value) || 1;
