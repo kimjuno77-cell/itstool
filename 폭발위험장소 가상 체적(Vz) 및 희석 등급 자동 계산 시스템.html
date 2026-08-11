@@ -409,6 +409,14 @@
                 </div>
             </div>
             <div class="form-group">
+                <label>물질명 (Material) / 요율 (Rate)</label>
+                <select id="material_rate" onchange="runSimulation()">
+                    <option value="1.0" selected>기본 (요율 1.0)</option>
+                    <option value="0.2">벤젠 (Benzene) - 요율 0.2</option>
+                    <option value="0.2">R.A (유사 성상) - 요율 0.2</option>
+                </select>
+            </div>
+            <div class="form-group">
                 <label>폭발하한계 질량농도 (LEL<sub>m</sub>)</label>
                 <div class="input-group">
                     <input type="number" id="lelm" value="0.060" step="0.001" oninput="runSimulation()"><span class="unit">kg/m³</span>
@@ -626,6 +634,8 @@
         const temp = parseFloat(document.getElementById('temp').value) || 0;
         const press_barg = parseFloat(document.getElementById('press').value) || 0;
         const mw = parseFloat(document.getElementById('mw').value) || 1;
+        const materialRate = parseFloat(document.getElementById('material_rate').value) || 1.0;
+        const materialName = document.getElementById('material_rate').options[document.getElementById('material_rate').selectedIndex].text;
         const lelm = parseFloat(document.getElementById('lelm').value) || 0.001;
         const avail = document.getElementById('avail').value;
         const f = parseFloat(document.getElementById('f_factor').value) || 1;
@@ -650,8 +660,11 @@
         log += `- 누출 등급: ${grade}\n`;
         log += `- 방출 계수 (Cd): ${cd} / 누출 단면적 (A): ${area_m2.toExponential(3)} m²\n`;
         log += `- 절대 압력 (P): ${press_pa.toFixed(0)} Pa / 절대 온도 (T): ${temp_k.toFixed(2)} K\n`;
-        const wg = cd * area_m2 * press_pa * Math.sqrt(mw / (Z * R * temp_k));
-        log += `> 산출된 가스 누출률 (Wg) = ${wg.toExponential(4)} kg/s\n\n`;
+        const w = cd * area_m2 * press_pa * Math.sqrt(mw / (Z * R * temp_k));
+        log += `- 이론 누출률 (W) = ${w.toExponential(4)} kg/s\n`;
+        log += `- 적용 물질: ${materialName}\n`;
+        const wg = w * materialRate;
+        log += `> 산출된 가스 누출률 (Wg) = W × 요율(${materialRate}) = ${wg.toExponential(4)} kg/s\n\n`;
 
         // 4. Step 2: Ventilation Rate (C)
         log += `[Step 2] 환기율(C) 산출 [설치 장소: ${loc === 'indoor' ? '실내' : '옥외'}]\n`;
