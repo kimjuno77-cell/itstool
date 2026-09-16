@@ -1,0 +1,7 @@
+{
+  // 설명: Microsoft Edge DevTools의 웹 접근성/디자인 힌트(WebHint)로 인한 불필요한 적색(9+) 오류 표시 비활성화
+  "vscode-edge-devtools.webhint": false,
+  // 설명: HTML 파일 저장 시 포맷팅 및 구문 무결성 유지
+  "html.validate.scripts": true,
+  "html.validate.styles": true
+}
