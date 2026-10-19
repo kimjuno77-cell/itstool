@@ -667,8 +667,9 @@
         }
 
         .featured-grid {
+            /* 설명: 4개의 추천 설계 카드를 화면 폭에 맞춰 2x2 또는 가로형으로 최적 배열 */
             display: grid;
-            grid-template-columns: 1.3fr 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 20px;
         }
 
@@ -1035,6 +1036,21 @@
                     <span class="nav-badge badge-pipe">기계</span>
                 </li>
 
+                <!-- TAB 14: PRESSURE DROP CALCULATOR -->
+                <!-- 설명: 산업용 덕트 및 압력배관, 펌프 수력학 압력강하 통합 계산기 탭 연동 -->
+                <li class="nav-item" onclick="switchTab('pressure-drop', this, 'https://kimjuno77-cell.github.io/pressure-drop-calculator/')">
+                    <div class="nav-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 16v-4"></path>
+                            <path d="M12 8h.01"></path>
+                            <polyline points="8 12 12 8 16 12"></polyline>
+                        </svg>
+                    </div>
+                    <span>덕트 및 배관 압력손실 계산기</span>
+                    <span class="nav-badge badge-pipe">배관/유체</span>
+                </li>
+
             </ul>
         </nav>
 
@@ -1085,9 +1101,10 @@
                 <!-- Welcome Billboard banner -->
                 <div class="welcome-card">
                     <span class="welcome-badge">Plant Engineering Portal Suite</span>
-                    <h3>19종 엔지니어링 설계 자동화 툴 및 업무 협업 플랫폼 통합</h3>
+                    <!-- 설명: 총 도구 수 19종에서 20종으로 업데이트 -->
+                    <h3>20종 엔지니어링 설계 자동화 툴 및 업무 협업 플랫폼 통합</h3>
                     <p class="desc">
-                        본 포털 시스템은 구조 설계, 플랜트 기기 기초 하중 검토, HVAC 발열 산정, 동결방지 배관 설계, 폭발 위험 분석, 방유제 용량 및 이격거리 검토(KOSHA C-C-88-2026), Tank 열손실 및 결로 평가 등 실무 핵심 연산 9가지와 
+                        본 포털 시스템은 구조 설계, 플랜트 기기 기초 하중 검토, HVAC 발열 산정, 동결방지 배관 설계, 폭발 위험 분석, 방유제 용량 및 이격거리 검토(KOSHA C-C-88-2026), Tank 열손실 및 결로 평가, 산업용 덕트 및 배관 압력손실 계산(Crane TP-410 / KDS 31 25 00) 등 실무 핵심 연산 10가지와 
                         Streamlit 기반의 설계 자동화, FFS 수명 평가, 일정/SOP 도구 4가지, PPT 원본 서식 유지 통합 프로그램, 폐수발생량 및 Sump Pit/Pump 계산서, Project L&L Knowledge 지식 플랫폼, 
                         그리고 주간회의 시스템(Workload) 및 EMKO 3-Way Cross Check 품질 검증 시스템을 하나의 직관적인 탭 환경에 통합하여 설계 신뢰성을 극대화하고 업무 처리를 표준화합니다.
                     </p>
@@ -1099,7 +1116,7 @@
                             </div>
                             <div class="stat-info">
                                 <span class="stat-label">활성 라이브러리</span>
-                                <span class="stat-value">19종 도구</span>
+                                <span class="stat-value">20종 도구</span>
                             </div>
                         </div>
                         <div class="stat-card">
@@ -1135,6 +1152,23 @@
 
                     <div class="featured-grid">
                         
+                        <!-- CARD 0: PRESSURE DROP CALCULATOR (NEW PRO FEATURED) -->
+                        <!-- 설명: 신규 추가된 덕트 및 압력배관 압력손실 계산서 최상위 하이라이트 카드 -->
+                        <div class="featured-card highlight" onclick="switchTab('pressure-drop', document.querySelector('[onclick*=\'pressure-drop\']'), 'https://kimjuno77-cell.github.io/pressure-drop-calculator/')" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(15, 23, 42, 0.6) 100%); border-color: rgba(99, 102, 241, 0.4);">
+                            <div class="featured-badge-row">
+                                <span class="badge-new" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">NEW V1.0</span>
+                                <span class="nav-badge badge-pipe">Crane TP-410 / KDS 31 25 00</span>
+                            </div>
+                            <div class="featured-card-title">덕트 및 압력배관 압력손실 계산서</div>
+                            <div class="featured-card-desc">
+                                공조·환기 덕트(마찰/국부손실) 및 산업용 압력배관(Darcy-Weisbach, Colebrook-White, Hooper 2-K)과 펌프 수력학(NPSHa, 차압, 양정·동력) 국·영문 전문 계산 플랫폼.
+                            </div>
+                            <div class="featured-card-footer">
+                                <span>바로 실행하기</span>
+                                <span style="color: #a5b4fc;">실행 ➔</span>
+                            </div>
+                        </div>
+
                         <!-- CARD 1: DIKE CAPACITY (HIGHLIGHTED NEW) -->
                         <div class="featured-card highlight" onclick="switchTab('dike-capacity', document.querySelector('[onclick*=\'dike-capacity\']'), './Dike_Capacity_Caculation.html')">
                             <div class="featured-badge-row">
@@ -1197,6 +1231,18 @@
                         </h4>
                         
                         <div class="notice-list">
+                            <!-- 설명: 산업용 덕트 및 압력배관 계산서 신규 연동 공지 등록 -->
+                            <div class="notice-item">
+                                <div class="notice-meta">
+                                    <span class="notice-badge version" style="background: rgba(99, 102, 241, 0.15); color: #a5b4fc;">System Update</span>
+                                    <span class="notice-date">2026-10-19</span>
+                                </div>
+                                <div class="notice-title">산업용 덕트 및 압력배관 압력손실 계산서(Pressure Drop Calculator) 신규 연동</div>
+                                <div class="notice-desc">
+                                    KDS 31 25 00 공조·환기 덕트 마찰/국부손실, Crane TP-410 및 Hooper 2-K 기준 산업용 압력배관 유체 마찰, 그리고 펌프 계통 수력학(흡입·토출 차압, NPSHa, 양정 및 모터 동력)을 정밀 산출하고 검증하는 전문 계산 플랫폼이 통합 탭에 새롭게 연동되었습니다.
+                                </div>
+                            </div>
+
                             <div class="notice-item">
                                 <div class="notice-meta">
                                     <span class="notice-badge version" style="background: rgba(14, 165, 233, 0.12); color: #7dd3fc;">System Update</span>
@@ -1329,6 +1375,18 @@
                         </h4>
 
                         <div class="guide-links-container">
+                            <!-- 설명: Pressure Drop Calculator 바로가기 링크 추가 -->
+                            <a class="guide-link-card" href="https://kimjuno77-cell.github.io/pressure-drop-calculator/" target="_blank" title="덕트 및 압력배관 압력손실 계산기 새 창 열기">
+                                <div class="guide-icon-box" style="color: var(--accent-primary);">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                </div>
+                                <div class="guide-details">
+                                    <span class="guide-link-title">Pressure Drop Calculator</span>
+                                    <span class="guide-link-desc">덕트·배관·펌프 압력강하 계산 플랫폼 바로가기</span>
+                                </div>
+                                <div class="guide-arrow">➔</div>
+                            </a>
+
                             <!-- Link 0: PPT Merger Builder v6 Download -->
                             <a class="guide-link-card" href="./PPT_Merger_Builder_v6.zip" download title="PPT 병합 프로그램 다운로드">
                                 <div class="guide-icon-box" style="color: var(--accent-green);">
