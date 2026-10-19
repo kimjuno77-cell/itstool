@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>배관 및 설비 보온 표면온도 계산서</title>
     <!-- 설명: Tailwind CSS 스타일 프레임워크 로드 -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="libs/tailwind.js"></script>
     <style>
         body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif; }
         
@@ -601,5 +601,11 @@
         // 설명: 창 로드 완료 시 즉시 기본 조건에 대한 계산을 수행합니다.
         window.onload = calculate;
     </script>
+<script>
+// 포털(index.html)의 [보고서 인쇄] 버튼 요청 수신 (file:// 교차 출처 환경용 브리지)
+window.addEventListener('message', function (e) {
+    if (e.source === window.parent && e.data && e.data.type === 'emko-print') { window.focus(); window.print(); }
+});
+</script>
 </body>
 </html>

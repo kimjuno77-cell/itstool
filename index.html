@@ -902,7 +902,7 @@
                 </li>
 
                 <!-- TAB 2: TANK FOUNDATION -->
-                <li class="nav-item" onclick="switchTab('tank-loading', this, './Foundation Loading Data for Storange Tank-3.html')">
+                <li class="nav-item" onclick="switchTab('tank-loading', this, './Foundation Loading Data for Storage Tank-3.html')">
                     <div class="nav-icon">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"></path></svg>
                     </div>
@@ -956,7 +956,7 @@
                 </li>
 
                 <!-- TAB 6-1: DIKE CAPACITY CALCULATION -->
-                <li class="nav-item" onclick="switchTab('dike-capacity', this, './Dike_Capacity_Caculation.html')">
+                <li class="nav-item" onclick="switchTab('dike-capacity', this, './Dike_Capacity_Calculation.html')">
                     <div class="nav-icon">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
                     </div>
@@ -1170,7 +1170,7 @@
                         </div>
 
                         <!-- CARD 1: DIKE CAPACITY (HIGHLIGHTED NEW) -->
-                        <div class="featured-card highlight" onclick="switchTab('dike-capacity', document.querySelector('[onclick*=\'dike-capacity\']'), './Dike_Capacity_Caculation.html')">
+                        <div class="featured-card highlight" onclick="switchTab('dike-capacity', document.querySelector('[onclick*=\'dike-capacity\']'), './Dike_Capacity_Calculation.html')">
                             <div class="featured-badge-row">
                                 <span class="badge-new">NEW V1.1</span>
                                 <span class="nav-badge badge-safety">KOSHA C-C-88-2026</span>
@@ -1527,6 +1527,10 @@
                 if (srcUrl.startsWith('http')) {
                     globalPrintBtn.style.display = 'none';
                     globalLinkBtn.style.display = 'flex'; // Show new tab button for external tools
+                } else if (srcUrl.toLowerCase().endsWith('.pdf')) {
+                    // PDF viewer has its own print control and cannot be scripted from the portal
+                    globalPrintBtn.style.display = 'none';
+                    globalLinkBtn.style.display = 'none';
                 } else {
                     globalPrintBtn.style.display = 'flex';
                     globalLinkBtn.style.display = 'none';
@@ -1586,9 +1590,13 @@
                     iframe.contentWindow.focus();
                     iframe.contentWindow.print();
                 } catch (e) {
-                    console.error("인쇄 호출 실패. 동일 오프라인 디렉토리 구조 검증 필요: ", e);
-                    // Fallback alerts
-                    alert("계산서의 보안 정책 또는 도메인 제약으로 인쇄가 제한되었습니다. 툴 내부의 개별 인쇄 버튼을 활용해 주십시오.");
+                    // file:// 로 열면 브라우저가 iframe 을 교차 출처로 취급하므로 postMessage 브리지로 인쇄 요청
+                    try {
+                        iframe.contentWindow.postMessage({ type: 'emko-print' }, '*');
+                    } catch (e2) {
+                        console.error("인쇄 호출 실패: ", e2);
+                        alert("계산서의 보안 정책 또는 도메인 제약으로 인쇄가 제한되었습니다. 툴 내부의 개별 인쇄 버튼을 활용해 주십시오.");
+                    }
                 }
             }
         }

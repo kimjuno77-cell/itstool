@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sump Pit & Sump Pump Capacity Calculation Sheet</title>
     <!-- SheetJS CDN for Excel Download & Upload -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="libs/xlsx.full.min.js"></script>
     <style>
         :root {
             --primary: #1a365d;
@@ -1040,6 +1040,12 @@
         }
         event.target.value = ""; 
     }
+</script>
+<script>
+// 포털(index.html)의 [보고서 인쇄] 버튼 요청 수신 (file:// 교차 출처 환경용 브리지)
+window.addEventListener('message', function (e) {
+    if (e.source === window.parent && e.data && e.data.type === 'emko-print') { window.focus(); window.print(); }
+});
 </script>
 </body>
 </html>

@@ -191,7 +191,7 @@
         </table>
 
         <div class="sketch-container">
-            <img src="Foundation Loading Data for Storange Tank_Image.png" alt="Cone Roof Tank Outline Sketch">
+            <img src="Foundation Loading Data for Storage Tank_Image.png" alt="Cone Roof Tank Outline Sketch">
         </div>
 
         <table class="summary-table">
@@ -476,7 +476,7 @@
     <script>
         window.onload = function() { runCalculations(); }; 
 
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'libs/pdf.worker.min.js';
 
         // ----------------------------------------------------
         // 모든 폼 요소 빈칸(초기화) 처리 함수
@@ -986,5 +986,11 @@
             }
         }
     </script>
+<script>
+// 포털(index.html)의 [보고서 인쇄] 버튼 요청 수신 (file:// 교차 출처 환경용 브리지)
+window.addEventListener('message', function (e) {
+    if (e.source === window.parent && e.data && e.data.type === 'emko-print') { window.focus(); window.print(); }
+});
+</script>
 </body>
 </html>

@@ -463,5 +463,11 @@ function calculate() {
     window.scrollTo(0, document.body.scrollHeight);
 }
 </script>
+<script>
+// 포털(index.html)의 [보고서 인쇄] 버튼 요청 수신 (file:// 교차 출처 환경용 브리지)
+window.addEventListener('message', function (e) {
+    if (e.source === window.parent && e.data && e.data.type === 'emko-print') { window.focus(); window.print(); }
+});
+</script>
 </body>
 </html>

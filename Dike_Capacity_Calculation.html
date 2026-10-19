@@ -5730,4 +5730,10 @@ function Af() {
 
 // React 루트 렌더링 호출
 (0, $e.createRoot)(document.getElementById('root')).render((0, G.jsx)(Af, {}));
-})();</script></body></html>
+})();</script><script>
+// 포털(index.html)의 [보고서 인쇄] 버튼 요청 수신 (file:// 교차 출처 환경용 브리지)
+window.addEventListener('message', function (e) {
+    if (e.source === window.parent && e.data && e.data.type === 'emko-print') { window.focus(); window.print(); }
+});
+</script>
+</body></html>
